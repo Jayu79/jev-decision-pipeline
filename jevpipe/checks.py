@@ -31,10 +31,15 @@ def _scalar(sql: str) -> int:
     return int(store.client().query(sql).result_rows[0][0])
 
 
+# Jev rounds each probability to 2 decimals, so sums of 0.99 or 1.01 are normal.
+PROBABILITY_SUM_TOLERANCE = 0.02
+
+
 def probabilities_sum_to_one() -> CheckResult:
+    tol = PROBABILITY_SUM_TOLERANCE
     bad = _scalar(f"""SELECT count() FROM {DB}.jev_answers FINAL
-                      WHERE abs(arraySum(mapValues(probabilities)) - 1) > 0.01""")
-    return CheckResult("probabilities_sum_to_one", bad == 0, f"{bad} answers off by more than 0.01")
+                      WHERE abs(arraySum(mapValues(probabilities)) - 1) > {tol}""")
+    return CheckResult("probabilities_sum_to_one", bad == 0, f"{bad} answers off by more than {tol}")
 
 
 def all_tickets_decided() -> CheckResult:
