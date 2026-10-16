@@ -8,9 +8,16 @@ ClickHouse, asks [TypeSafe's Jev](https://typesafe.ai) to classify each one into
 says 90%, is it right about 90% of the time? That matters because calibrated
 confidence is what lets software decide when to act alone and when to ask a person.
 
-> **Finding:** _fill in after the real run, e.g. "Jev's flat 77-way Choice
-> auto-handled X% of tickets at 95% accuracy; its stated probabilities ran
-> Y points under/over actual accuracy above 0.8."_
+> **Finding:** Jev's flat 77-way Choice was 81.6% accurate and could
+> auto-handle **64.5% of tickets at 95% accuracy** (confidence ≥ 0.96). It is
+> overconfident: above 0.8 its stated probabilities averaged 97.7% while it was
+> right 89.9% of the time, about 8 points high (ECE 0.096). So use a measured
+> threshold, not the raw number. Fanning out into area-then-intent questions
+> *hurt*: 71.5% accuracy, ECE 0.155, and it never reached 95% accuracy at any
+> threshold.
+>
+> All 3,080 tickets were decided by `jev-1.13.0` with no failed calls, at
+> 157 ms median latency, for $0.60.
 >
 > 📊 [Calibration report](reports/calibration_report.html) ·
 > 🧾 [Raw API responses](evidence/jev_responses_sample.jsonl)

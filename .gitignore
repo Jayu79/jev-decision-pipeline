@@ -6,3 +6,5 @@ data/
 .airflow/
 reports/*.json
 evidence/mock_*.jsonl
+.venv/
+*.egg-info/
