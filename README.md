@@ -98,7 +98,8 @@ No key yet? `JEV_MOCK=1 make decide` runs everything against the mock server.
 The DAG ([`dags/jev_pipeline.py`](dags/jev_pipeline.py)) runs four quality checks
 after deciding: probabilities sum to 1, no ticket left undecided, every decision has
 a label (these three fail the run), and every call carries a request ID (warns only).
-`build_report` runs only if they pass. The DAG is scheduled every 10 minutes to
+On a capped run like `make smoke`, undecided tickets are expected, so that check
+only warns. `build_report` runs only if they pass. The DAG is scheduled every 10 minutes to
 pick up newly streamed tickets, and is paused until you turn it on.
 
 ## If I were building TypeSafe's data platform

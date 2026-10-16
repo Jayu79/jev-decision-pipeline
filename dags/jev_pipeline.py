@@ -70,7 +70,13 @@ def jev_decision_pipeline():
     @task
     def check_all_tickets_decided() -> None:
         from jevpipe import checks
-        checks.require(checks.all_tickets_decided())
+        result = checks.all_tickets_decided()
+        # A capped run (e.g. `make smoke`) leaves tickets pending on purpose: warn, don't fail.
+        if get_current_context()["params"]["limit"]:
+            if not result.passed:
+                log.warning("Capped run: %s", result.detail)
+            return
+        checks.require(result)
 
     @task
     def check_request_ids_present() -> None:
