@@ -1,0 +1,12 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "jevpipe"
+version = "0.1.0"
+description = "Kafka -> ClickHouse -> Airflow -> TypeSafe Jev, with a calibration report"
+requires-python = ">=3.11"
+
+[tool.setuptools]
+packages = ["jevpipe"]

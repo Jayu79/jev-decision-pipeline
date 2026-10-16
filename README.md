@@ -38,9 +38,10 @@ flowchart LR
     P[producer.py<br/>Banking77 → events] -->|support_tickets| K[(Redpanda<br/>Kafka API)]
     K --> Q[ClickHouse<br/>Kafka engine table]
     Q -->|materialized view| R[(raw_tickets<br/>ReplacingMergeTree)]
-    subgraph Dagster
-      D[jev_decisions] --> E[calibration_report]
-      G[ground_truth] --> E
+    subgraph Airflow DAG
+      D[decide_with_jev] --> C[4 quality checks]
+      G[load_ground_truth] --> C
+      C -->|all pass| E[build_report]
     end
     R --> D
     D <-->|typesafe-sdk<br/>11 Choice questions / call| J{{Jev API}}
@@ -57,6 +58,8 @@ flowchart LR
 | One `jev_calls` row per request (latency, tokens, retries) | Cost and reliability are queryable, and reconcile with TypeSafe's usage page |
 | All questions and thresholds live in [`jevpipe/questions.py`](jevpipe/questions.py) | TypeSafe's own advice: keep them reviewable in one place |
 | Calibration math runs in ClickHouse (window functions) | The warehouse does the aggregation; Python only draws |
+| Airflow quality checks gate the report | A bad batch fails the run instead of publishing wrong numbers |
+| `decide_with_jev` has no task retry; `max_active_runs=1` | Reruns are already resumable (only pending tickets are decided), so a retry would only re-bill calls; one run at a time avoids double-deciding |
 
 ## How you know this is real Jev output
 
@@ -80,19 +83,23 @@ Requires Docker, Python 3.11+, and a TypeSafe API key from the
 [console](https://console.typesafe.ai/keys).
 
 ```bash
+python -m venv .venv && source .venv/bin/activate
 cp .env.example .env          # add TYPESAFE_API_KEY
-make setup up schema          # deps, Kafka + ClickHouse, tables
+make setup up schema          # deps + Airflow metadata DB, Kafka + ClickHouse, tables
 make produce                  # stream 3,080 tickets into Kafka
-make smoke                    # 25 real Jev calls to check everything works
-make decide                   # decide the rest, build reports/calibration_report.html
-make ui                       # optional: Dagster UI at localhost:3000
+make smoke                    # DAG run capped at 25 real Jev calls
+make decide                   # full DAG run: decide the rest, check, build reports/calibration_report.html
+make ui                       # optional: Airflow UI at localhost:8080
 ```
 
 No key yet? `JEV_MOCK=1 make decide` runs everything against the mock server.
 `make test` runs the unit tests (no services needed).
 
-Dagster asset checks run after each materialization: probabilities sum to 1,
-no ticket left undecided, every call carries a request ID, every decision has a label.
+The DAG ([`dags/jev_pipeline.py`](dags/jev_pipeline.py)) runs four quality checks
+after deciding: probabilities sum to 1, no ticket left undecided, every decision has
+a label (these three fail the run), and every call carries a request ID (warns only).
+`build_report` runs only if they pass. The DAG is scheduled every 10 minutes to
+pick up newly streamed tickets, and is paused until you turn it on.
 
 ## If I were building TypeSafe's data platform
 

@@ -3,6 +3,6 @@ __pycache__/
 *.pyc
 .pytest_cache/
 data/
-.dagster_home/
+.airflow/
 reports/*.json
 evidence/mock_*.jsonl

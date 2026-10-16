@@ -2,13 +2,17 @@
 -include .env
 export
 
-export DAGSTER_HOME := $(CURDIR)/.dagster_home
+export AIRFLOW_HOME := $(CURDIR)/.airflow
+export AIRFLOW__CORE__DAGS_FOLDER := $(CURDIR)/dags
+export AIRFLOW__CORE__LOAD_EXAMPLES := False
 
-.PHONY: setup up schema produce decide report ui test down smoke
+DAG := jev_decision_pipeline
 
-setup:            ## install Python deps
+.PHONY: setup up schema produce smoke decide ui test down
+
+setup:            ## install deps (use a virtualenv) and initialise Airflow's metadata DB
 	python -m pip install -r requirements.txt
-	mkdir -p $(DAGSTER_HOME)
+	airflow db migrate
 
 up:               ## start Redpanda (Kafka) + ClickHouse
 	docker compose up -d
@@ -21,14 +25,13 @@ produce:          ## stream all 3,080 tickets into Kafka
 	python -m jevpipe.producer
 
 smoke:            ## 25 real Jev calls, to confirm the key and the setup work
-	dagster asset materialize -m jevpipe.definitions --select 'clickhouse_schema,ground_truth,jev_decisions' \
-	  --config-json '{"ops": {"jev_decisions": {"config": {"limit": 25}}}}'
+	airflow dags test $(DAG) -c '{"limit": 25}'
 
-decide:           ## decide every pending ticket and build the report
-	dagster asset materialize -m jevpipe.definitions --select '*'
+decide:           ## decide every pending ticket, run the checks, build the report
+	airflow dags test $(DAG)
 
-ui:               ## Dagster UI on http://localhost:3000
-	dagster dev -m jevpipe.definitions
+ui:               ## Airflow UI on http://localhost:8080 (login printed in the terminal)
+	airflow standalone
 
 test:
 	pytest -q

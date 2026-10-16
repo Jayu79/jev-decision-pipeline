@@ -179,7 +179,7 @@ footer {{ color: var(--fg2); font-size: 13px; margin-top: 40px; }}
 </style></head>
 <body><main>
 <h1>Is Jev calibrated on real banking support tickets?</h1>
-<p class="sub">Banking77 test set · Kafka → ClickHouse → Dagster → TypeSafe Jev → ClickHouse ·
+<p class="sub">Banking77 test set · Kafka → ClickHouse → Airflow → TypeSafe Jev → ClickHouse ·
 generated {datetime.now(timezone.utc):%Y-%m-%d %H:%M} UTC</p>
 {banner}
 <div class="tiles">{tiles_html}</div>

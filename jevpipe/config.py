@@ -4,6 +4,10 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass
+from pathlib import Path
+
+# Repo root, so paths work no matter which directory Airflow runs a task from.
+ROOT = Path(__file__).resolve().parents[1]
 
 
 def _env(name: str, default: str) -> str:
@@ -33,8 +37,9 @@ class Settings:
     input_price_per_m: float = float(_env("JEV_INPUT_PRICE_PER_M", "0.042"))
     output_price_per_m: float = float(_env("JEV_OUTPUT_PRICE_PER_M", "0"))
 
-    data_dir: str = _env("DATA_DIR", "data")
-    report_path: str = _env("REPORT_PATH", "reports/calibration_report.html")
+    data_dir: str = _env("DATA_DIR", str(ROOT / "data"))
+    report_path: str = _env("REPORT_PATH", str(ROOT / "reports" / "calibration_report.html"))
+    evidence_dir: str = _env("EVIDENCE_DIR", str(ROOT / "evidence"))
 
 
 settings = Settings()
