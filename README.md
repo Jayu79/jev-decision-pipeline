@@ -1,5 +1,7 @@
 # Jev decision pipeline
 
+**[Explore the results interactively](https://jayu79.github.io/jev-decision-pipeline/)**: drag a confidence cutoff over all 3,080 tickets, compare jev-1.13.0 with jev-1.14.0, and read any ticket with Jev's top 5 answers.
+
 **Can you trust Jev's confidence enough to let it route support tickets on its own?**
 
 This project streams 3,080 real banking support messages through Kafka into
