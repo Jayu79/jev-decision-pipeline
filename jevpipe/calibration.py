@@ -75,15 +75,21 @@ def ece(rel: pd.DataFrame) -> dict[str, float]:
 
 
 def coverage_curve() -> pd.DataFrame:
-    """Sort by confidence; cumulative accuracy vs share of tickets covered."""
+    """Sort by confidence; cumulative accuracy vs share of tickets covered.
+
+    Jev's confidences take few distinct values, so many tickets tie. The RANGE
+    frame treats a tie as one step: each point is exactly "every ticket with
+    confidence >= this", which is the rule a router can apply. (A ROWS frame
+    would cut through ties in whatever order storage returns them.)
+    """
     return store.query_df(f"""
         SELECT strategy, confidence,
-               row_number() OVER w / count() OVER (PARTITION BY strategy) AS coverage,
-               sum(correct) OVER w / row_number() OVER w                   AS accuracy
+               count() OVER w / count() OVER (PARTITION BY strategy) AS coverage,
+               sum(correct) OVER w / count() OVER w                  AS accuracy
         FROM {DB}.decision_eval
         WHERE {_FILTER}
         WINDOW w AS (PARTITION BY strategy ORDER BY confidence DESC
-                     ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW)
+                     RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW)
         ORDER BY strategy, coverage
     """, **_params())
 

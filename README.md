@@ -9,7 +9,7 @@ says 90%, is it right about 90% of the time? That matters because calibrated
 confidence is what lets software decide when to act alone and when to ask a person.
 
 > **Finding:** Jev's flat 77-way Choice was 81.6% accurate and could
-> auto-handle **64.5% of tickets at 95% accuracy** (confidence ≥ 0.96). It is
+> auto-handle **64.5% of tickets at 95% accuracy** (confidence ≥ 0.97). It is
 > overconfident: above 0.8 its stated probabilities averaged 97.7% while it was
 > right 89.9% of the time, about 8 points high (ECE 0.096). So use a measured
 > threshold, not the raw number. Fanning out into area-then-intent questions
@@ -62,9 +62,13 @@ and the confidence cutoff that gets you there:
 
 | Target accuracy | Flat | Fan-out |
 |---|---|---|
-| 90% | 81.6% of tickets (cutoff 0.80) | 55.0% (cutoff 0.96) |
-| 95% | **64.5%** (cutoff 0.96) | not reachable |
-| 98% | 0.3% (cutoff 1.00) | not reachable |
+| 90% | 81.3% of tickets (cutoff 0.81) | 53.9% (cutoff 0.96) |
+| 95% | **64.5%** (cutoff 0.97) | not reachable |
+| 98% | not reachable | not reachable |
+
+A cutoff means "every ticket at or above this confidence". Jev's confidences
+take few distinct values (72 across 3,080 flat answers), so ties are counted
+whole rather than split.
 
 ### Where the confidence goes wrong (flat)
 
@@ -101,7 +105,7 @@ wording in [`questions.py`](jevpipe/questions.py).
    answer by the within-area answer, so mistakes at either step add up. It lost
    10 points of accuracy and was never accurate enough for a 95% target.
 2. **Use a measured cutoff, not the raw confidence.** Routing tickets where flat
-   confidence is ≥ 0.96 automatically and sending the rest to a person gives
+   confidence is ≥ 0.97 automatically and sending the rest to a person gives
    95% accuracy on 64.5% of the volume.
 3. **It's cheap and fast.** 3,080 calls with 11 questions each cost $0.60
    (14.3M input tokens, about 4,600 per call). Median latency was 157 ms

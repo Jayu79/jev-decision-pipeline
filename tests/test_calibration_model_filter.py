@@ -100,3 +100,23 @@ def test_metrics_for_one_model_ignore_the_other(scratch_db, monkeypatch):
     assert len(calibration.coverage_curve()) == 20
     assert set(calibration.reliability()["bin"]) == {6}
     assert calibration.provenance()["models_served"] == [V14]
+
+
+def test_coverage_threshold_never_splits_tied_confidences(scratch_db, monkeypatch):
+    # Two right at 1.0, then four tied at 0.9 with only one right. Cutting
+    # through the tie could report 50% coverage at 100% accuracy; no
+    # threshold actually gives that.
+    ch = store.client()
+    tickets = [("a", 1.0, True), ("b", 1.0, True),
+               ("c", 0.9, True), ("d", 0.9, False), ("e", 0.9, False), ("f", 0.9, False)]
+    ch.insert(f"{scratch_db}.ground_truth", [[e, "card_arrival"] for e, _, _ in tickets],
+              column_names=["event_id", "label"])
+    ch.insert(f"{scratch_db}.strategy_decisions",
+              [[e, "flat", QUESTION_VERSION, V13, "card_arrival" if ok else "pin_blocked", c, 0.0, c, 0]
+               for e, c, ok in tickets],
+              column_names=["event_id", "strategy", "question_version", "model_served", "intent",
+                            "p_intent", "p_second", "confidence", "is_mock"])
+    _use_model(monkeypatch, V13)
+    thr = calibration.thresholds(calibration.coverage_curve()).set_index("target")
+    assert thr.loc[0.95, "coverage"] == pytest.approx(2 / 6)
+    assert thr.loc[0.95, "threshold"] == pytest.approx(1.0)
