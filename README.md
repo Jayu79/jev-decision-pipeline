@@ -133,10 +133,10 @@ questions, on 2026-10-17. Each model's numbers come only from rows it served
 | | Flat 1.13 | Flat 1.14 | Fan-out 1.13 | Fan-out 1.14 |
 |---|---|---|---|---|
 | Accuracy | **81.6%** | 81.4% | 71.5% | 70.7% |
-| Mean stated confidence | 91.2% | 89.9% | 86.8% | 84.5% |
+| Mean stated confidence | 91.2% | 89.8% | 86.8% | 84.5% |
 | ECE (lower is better) | 0.096 | **0.085** | 0.155 | 0.139 |
 | Brier score (top choice) | 0.121 | **0.118** | 0.184 | 0.176 |
-| Coverage at 90% accuracy | 81.3% (cutoff 0.81) | **82.0%** (cutoff 0.77) | 53.9% (cutoff 0.96) | 55.0% (cutoff 0.92) |
+| Coverage at 90% accuracy | 81.3% (cutoff 0.81) | **81.9%** (cutoff 0.77) | 53.9% (cutoff 0.96) | 55.0% (cutoff 0.92) |
 | Coverage at 95% accuracy | **64.5%** (cutoff 0.97) | 63.6% (cutoff 0.95) | not reachable | 29.3% (cutoff 0.99) |
 | Coverage at 98% accuracy | not reachable | not reachable | not reachable | not reachable |
 | Latency p50 / p95 / p99 | 157 / 264 / 330 ms | 155 / 280 / 422 ms | same calls | same calls |
