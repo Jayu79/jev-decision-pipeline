@@ -32,6 +32,10 @@ jobs:
       - run: npm run build
       - name: Check the page's numbers against the data
         run: npm run check
+      - name: Install Chromium for the layout check
+        run: npx playwright install --with-deps chromium
+      - name: Check the page never scrolls sideways
+        run: npm run check:layout
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

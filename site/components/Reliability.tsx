@@ -12,12 +12,13 @@ const MIN_MARK = 5;
 type Tip = { model: Model; b: ReliabilityBin };
 
 /**
- * Fig. 2. A square reliability diagram on graph paper. Drawn at its real pixel
- * size (not scaled), so text stays legible on phones.
+ * Fig. 2. A square reliability diagram on graph paper. Fluid: the viewBox
+ * follows the measured width, so once measured it draws 1:1 (text stays at
+ * 12px or more on phones), and before that it scales to fit, never overflows.
  */
 export function Reliability({ bins }: { bins: Record<Model, Record<Strategy, ReliabilityBin[]>> }) {
   const wrap = useRef<HTMLDivElement>(null);
-  const [width, setWidth] = useState(560);
+  const [width, setWidth] = useState(340); // phone width until measured
   const [strategy, setStrategy] = useState<Strategy>("flat");
   const [tip, setTip] = useState<Tip | null>(null);
   const [focused, setFocused] = useState<string | null>(null);
@@ -68,7 +69,13 @@ export function Reliability({ bins }: { bins: Record<Model, Record<Strategy, Rel
         options={STRATEGIES.map((s) => ({ value: s, label: STRATEGY_LABEL[s] }))}
       />
       <div ref={wrap} className="relative mt-5 w-full max-w-[600px]">
-        <svg width={width} height={H} role="group" aria-label={`Reliability diagram, ${STRATEGY_LABEL[strategy]}`} className="block overflow-visible">
+        <svg
+          viewBox={`0 0 ${width} ${H}`}
+          width="100%"
+          role="group"
+          aria-label={`Reliability diagram, ${STRATEGY_LABEL[strategy]}`}
+          className="block h-auto overflow-visible"
+        >
           {/* Graph paper, inside the plot only: a fine line every 0.02, a heavier one every 0.1. */}
           <g aria-hidden>
             {minor.map((v, i) => {
