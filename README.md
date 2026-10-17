@@ -124,6 +124,35 @@ wording in [`questions.py`](jevpipe/questions.py).
   tickets, so the "every ticket decided" check always failed it. That check now
   only warns when `limit` is set; full runs are still strict.
 
+## 1.13 vs 1.14
+
+`jev-1.14.0` (preview, same price) rerun on the same 3,080 tickets with the same
+questions, on 2026-10-17. Each model's numbers come only from rows it served
+(`model_served`), so the two runs never mix.
+
+| | Flat 1.13 | Flat 1.14 | Fan-out 1.13 | Fan-out 1.14 |
+|---|---|---|---|---|
+| Accuracy | **81.6%** | 81.4% | 71.5% | 70.7% |
+| Mean stated confidence | 91.2% | 89.9% | 86.8% | 84.5% |
+| ECE (lower is better) | 0.096 | **0.085** | 0.155 | 0.139 |
+| Brier score (top choice) | 0.121 | **0.118** | 0.184 | 0.176 |
+| Coverage at 90% accuracy | 81.3% (cutoff 0.81) | **82.0%** (cutoff 0.77) | 53.9% (cutoff 0.96) | 55.0% (cutoff 0.92) |
+| Coverage at 95% accuracy | **64.5%** (cutoff 0.97) | 63.6% (cutoff 0.95) | not reachable | 29.3% (cutoff 0.99) |
+| Coverage at 98% accuracy | not reachable | not reachable | not reachable | not reachable |
+| Latency p50 / p95 / p99 | 157 / 264 / 330 ms | 155 / 280 / 422 ms | same calls | same calls |
+| Cost (3,080 calls) | $0.60 | $0.60 | same calls | same calls |
+
+1.14 is **better calibrated but not more accurate**. Its stated confidence
+dropped (by 1.3 points on flat, 2.3 on fan-out), closing part of the
+overconfidence gap (flat ECE 0.096 → 0.085), while flat accuracy didn't move: 1.14 fixed 29 tickets 1.13 got wrong and
+broke 34 it got right. For the decision this project is about, auto-handling
+at 95% accuracy with the flat question, 1.14 is slightly *worse* (63.6% vs
+64.5%), so it isn't a reason to switch; it only reaches 95% on fan-out, which
+is still the weaker strategy. Its tail latency is also higher (p99 422 vs 330 ms).
+
+📊 [jev-1.14.0 report](reports/calibration_report_jev-1.14.0.html) ·
+🧾 [jev-1.14.0 raw responses](evidence/jev-1.14.0_responses_sample.jsonl)
+
 ## Architecture
 
 ```mermaid
@@ -191,6 +220,17 @@ No key yet? `JEV_MOCK=1 make decide` runs everything against the mock server.
 `make smoke` decides the *next* 25 pending tickets each time it runs, and
 `make decide` then picks up whatever is left, so no call is ever repeated.
 
+To run another model version, pass settings as `make` arguments (variables in
+`.env` override ones set in the shell):
+
+```bash
+make decide JEV_MODEL=jev-1.14.0 REPORT_PATH=$PWD/reports/calibration_report_jev-1.14.0.html
+```
+
+Pending tickets are tracked per requested model, so this decides all 3,080
+again without touching the earlier run. Reports cover one served version:
+`REPORT_MODEL` if set, otherwise whatever `JEV_MODEL` was last served as.
+
 ### Setup gotchas
 
 - **Apple Silicon:** make sure the virtualenv's Python is a native arm64 build
@@ -240,8 +280,9 @@ is an event worth keeping. Where I'd take it:
 - The 77 intent descriptions in `questions.py` are mine. Better wording would
   likely move accuracy; that's a lever, not a fixed property of Jev.
 - Calibration describes groups of predictions, not any single answer.
-- These results are from one run, on one dataset, with one model version
-  (`jev-1.13.0`). A new model version would need its own run.
+- Each model version was run once, on one dataset. The 1.13 vs 1.14
+  difference in flat accuracy is 5 tickets net; one run of each can't say
+  whether that would hold up.
 
 Dataset: [Banking77](https://github.com/PolyAI-LDN/task-specific-datasets)
 (PolyAI, CC-BY-4.0).
