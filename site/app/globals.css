@@ -1,0 +1,153 @@
+@import "tailwindcss";
+
+:root {
+  --paper: #edf0f3;
+  --surface: #f7f8fa;
+  --ink: #16202e;
+  --steel: #5b6878;
+  --rule: #d3d9e0;
+  --correct: #2a78d6;
+  --wrong: #eb6834;
+  --m113: #2a78d6;
+  --m114: #1baf7a;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #12171f;
+    --surface: #1a212b;
+    --ink: #e8edf2;
+    --steel: #a3aebb;
+    --rule: #2a3340;
+    --correct: #3987e5;
+    --wrong: #d95926;
+    --m113: #3987e5;
+    --m114: #199e70;
+    color-scheme: dark;
+  }
+}
+
+@theme inline {
+  --color-paper: var(--paper);
+  --color-surface: var(--surface);
+  --color-ink: var(--ink);
+  --color-steel: var(--steel);
+  --color-rule: var(--rule);
+  --color-correct: var(--correct);
+  --color-wrong: var(--wrong);
+  --color-m113: var(--m113);
+  --color-m114: var(--m114);
+  --font-sans: "Schibsted Grotesk", ui-sans-serif, system-ui, sans-serif;
+
+  /* 16px base; the page uses 15/17/20/26/38/56. */
+  --text-sm: 0.9375rem;
+  --text-sm--line-height: 1.5;
+  --text-base: 1.0625rem;
+  --text-base--line-height: 1.6;
+  --text-lg: 1.25rem;
+  --text-lg--line-height: 1.5;
+  --text-xl: 1.625rem;
+  --text-xl--line-height: 1.25;
+  --text-2xl: 2.375rem;
+  --text-2xl--line-height: 1.12;
+  --text-3xl: 3.5rem;
+  --text-3xl--line-height: 1.05;
+}
+
+html {
+  background: var(--paper);
+  color: var(--ink);
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  line-height: 1.6;
+}
+
+h1,
+h2,
+h3 {
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+
+p {
+  text-wrap: pretty;
+}
+
+a {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  text-decoration-color: var(--steel);
+}
+
+a:hover {
+  text-decoration-color: var(--ink);
+}
+
+:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* The cutoff slider: a large, plain track with a visible thumb. */
+.cutoff {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 44px;
+  background: transparent;
+  cursor: pointer;
+}
+.cutoff::-webkit-slider-runnable-track {
+  height: 8px;
+  border-radius: 4px;
+  background: linear-gradient(to right, var(--steel) var(--fill), var(--ink) var(--fill));
+}
+.cutoff::-moz-range-track {
+  height: 8px;
+  border-radius: 4px;
+  background: linear-gradient(to right, var(--steel) var(--fill), var(--ink) var(--fill));
+}
+.cutoff::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 28px;
+  height: 28px;
+  margin-top: -10px;
+  border-radius: 50%;
+  background: var(--surface);
+  border: 3px solid var(--ink);
+}
+.cutoff::-moz-range-thumb {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--surface);
+  border: 3px solid var(--ink);
+}
+
+details > summary {
+  cursor: pointer;
+  color: var(--steel);
+  width: fit-content;
+}
+details > summary:hover {
+  color: var(--ink);
+}
