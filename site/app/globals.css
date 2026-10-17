@@ -33,6 +33,7 @@
 
 @theme {
   --breakpoint-wide: 68.75rem; /* 1100px: margin notes move into the margin */
+  --breakpoint-full: 77.5rem; /* 1240px: the grid reaches its max width */
 
   /* 13 / 15 / 18 / 22 / 30 / 44 / 72 */
   --text-xs: 0.8125rem;

@@ -50,6 +50,9 @@ No gradients, glows, blurs, glass or drop shadows.
 - Left-aligned throughout. Sections are separated by space and one full-width
   hairline, never by boxes. Structural radius is 0; small controls at most 2px.
 - Figures are numbered Fig. 1 to Fig. 5, with a small Archivo caption under each.
+- Masthead: from 1100px the title and its inspection tag share one line, and the
+  metadata sizes its columns to its values (two across, three from 1240px), so
+  nothing in the header wraps.
 
 ## Motion
 

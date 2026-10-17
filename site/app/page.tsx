@@ -261,26 +261,28 @@ export default function Page() {
       ],
     ];
     return (
+      // Desktop: title and tag share one line; the metadata sizes its columns to its
+      // values (three across from 1240px, two across below) so nothing wraps.
       <header className="border-b border-hairline pt-10 pb-8">
-        <Grid className="gap-y-8">
-          <div className="wide:col-span-6">
-            <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
-              <h1 className="display text-2xl">Jev, calibrated</h1>
+        <div className="flex flex-col gap-8 wide:flex-row wide:items-end wide:justify-between wide:gap-6">
+          <div className="wide:min-w-0">
+            <div className="flex flex-wrap items-center gap-x-5 gap-y-3 wide:flex-nowrap">
+              <h1 className="display text-2xl whitespace-nowrap">Jev, calibrated</h1>
               <InspectionTag text={`Measured: ${pct(headline.coverage)} at 95% accuracy`} />
             </div>
             <p className="mt-3 max-w-[52ch] font-serif text-lg leading-snug text-ink">
               Can you trust a model&apos;s confidence enough to let it route support tickets on its own?
             </p>
           </div>
-          <dl className="grid max-w-[40rem] grid-cols-2 gap-x-6 gap-y-4 text-xs sm:grid-cols-3 wide:col-span-6 wide:col-start-7 wide:max-w-none wide:self-end">
+          <dl className="grid max-w-[40rem] grid-cols-2 gap-x-6 gap-y-4 text-xs sm:grid-cols-3 wide:max-w-none wide:shrink-0 wide:grid-cols-[repeat(2,auto)] full:grid-cols-[repeat(3,auto)]">
             {items.map(([k, v]) => (
               <div key={k}>
                 <dt className="text-ink-2">{k}</dt>
-                <dd className="num mt-0.5 text-ink">{v}</dd>
+                <dd className="num mt-0.5 text-ink wide:whitespace-nowrap">{v}</dd>
               </div>
             ))}
           </dl>
-        </Grid>
+        </div>
       </header>
     );
   }
@@ -516,7 +518,7 @@ export default function Page() {
 function InspectionTag({ text }: { text: string }) {
   // A luggage-style inspection tag: point on the left, a punched hole, the measured result.
   return (
-    <span className="num relative inline-flex h-7 items-center pr-3 pl-6 text-xs font-semibold text-ink">
+    <span className="num relative inline-flex h-7 shrink-0 items-center pr-3 pl-6 text-xs font-semibold whitespace-nowrap text-ink">
       <span aria-hidden className="absolute inset-0 bg-signal [clip-path:polygon(12px_0,100%_0,100%_100%,12px_100%,0_50%)]" />
       <span aria-hidden className="absolute top-1/2 left-[9px] size-2 -translate-y-1/2 rounded-full border border-ink bg-paper" />
       <span className="relative">{text}</span>
