@@ -9,6 +9,8 @@ import { MODELS, STRATEGIES, STRATEGY_LABEL, type Area, type DecisionRow, type M
 
 const BASE = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 const PAGE = 12;
+/** Intents below this probability are left out of the specimen's list. */
+const MIN_SHOWN = 0.005;
 
 type Status = "all" | "wrong" | "confident_wrong" | "unsure";
 const STATUS: { value: Status; label: string }[] = [
@@ -274,7 +276,8 @@ export function Explorer({ areas }: { areas: Area[] }) {
       </div>
       <Caption n={4}>
         Every ticket Jev saw. Pick one from the list to inspect it: the customer&apos;s message, the correct intent,
-        Jev&apos;s five most likely intents with their probabilities, and the request ID TypeSafe returned for that call.
+        Jev&apos;s most likely intents with their probabilities (any of its top five at 0.5% or more), and the request ID
+        TypeSafe returned for that call.
       </Caption>
     </figure>
   );
@@ -299,7 +302,8 @@ function Specimen({ ticket, d, areas }: { ticket: TicketRow; d: DecisionRow; are
   const [eventId, text, label, area] = ticket;
   const [, intent, pIntent, conf, correct, requestId, top5] = d;
   const areaName = areas.find((a) => a.area === area);
-  const inTop = top5.some(([i]) => i === label);
+  const listed = top5.filter(([, p]) => p >= MIN_SHOWN);
+  const labelRank = top5.findIndex(([i]) => i === label);
   return (
     <article aria-label="Selected ticket" className="border-t border-ink pt-3">
       <p className="num text-xs text-ink-2">Ticket {eventId}</p>
@@ -321,9 +325,9 @@ function Specimen({ ticket, d, areas }: { ticket: TicketRow; d: DecisionRow; are
         </dd>
       </dl>
 
-      <h3 className="mt-8 text-sm font-semibold">Jev&apos;s top 5 intents</h3>
+      <h3 className="mt-8 text-sm font-semibold">Jev&apos;s most likely intents</h3>
       <ul className="mt-3">
-        {top5.map(([i, p]) => {
+        {listed.map(([i, p]) => {
           const isLabel = i === label;
           const isPick = i === intent;
           return (
@@ -350,7 +354,11 @@ function Specimen({ ticket, d, areas }: { ticket: TicketRow; d: DecisionRow; are
           );
         })}
       </ul>
-      {!inTop && <p className="mt-2 text-xs text-ink-2">The correct intent is not in Jev&apos;s top 5.</p>}
+      {listed.length < top5.length && <p className="mt-2 text-xs text-ink-2">Every other intent: under 0.5%</p>}
+      {labelRank === -1 && <p className="mt-1 text-xs text-ink-2">The correct intent is not among Jev&apos;s five most likely.</p>}
+      {labelRank >= 0 && top5[labelRank][1] < MIN_SHOWN && (
+        <p className="mt-1 text-xs text-ink-2">The correct intent, {humanize(label)}, is among them, under 0.5%.</p>
+      )}
 
       <p className="mt-6 border-t border-hairline pt-3 text-xs break-all text-ink-2">
         TypeSafe request ID <span className="num text-ink">{requestId}</span>
