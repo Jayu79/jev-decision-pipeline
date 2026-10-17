@@ -10,7 +10,8 @@ from datetime import datetime, timezone
 import pandas as pd
 
 from .calibration import Results
-from .config import settings
+from .config import ROOT, settings
+from .pipeline import evidence_path
 from .questions import QUESTION_VERSION
 
 SERIES = {"flat": ("--s1", "Flat 77-way Choice"),
@@ -133,7 +134,7 @@ def render(res: Results, path: str | None = None) -> str:
         "first / last call (UTC)": f"{p['first_call']} → {p['last_call']}",
         "question version": QUESTION_VERSION,
         "run ids": ", ".join(p["run_ids"]),
-        "sample of raw responses": "evidence/jev_responses_sample.jsonl" if verified else "evidence/mock_responses_sample.jsonl",
+        "sample of raw responses": os.path.relpath(evidence_path(), ROOT),
     }
     prov_rows = "".join(f"<tr><th>{html.escape(k)}</th><td>{html.escape(str(v))}</td></tr>" for k, v in prov.items())
 

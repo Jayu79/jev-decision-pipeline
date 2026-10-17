@@ -1,3 +1,6 @@
+# Fixed project name so the ClickHouse volume doesn't depend on the checkout folder.
+name: jev-decision-pipeline
+
 services:
   redpanda:
     # Kafka-API-compatible broker; single binary, no ZooKeeper.

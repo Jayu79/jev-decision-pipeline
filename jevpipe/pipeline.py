@@ -38,14 +38,20 @@ def pending_tickets(limit: int | None = None) -> list[tuple[str, str]]:
     return list(df.itertuples(index=False, name=None))
 
 
-def _evidence_path() -> str:
-    name = "mock_responses_sample.jsonl" if settings.mock else "jev_responses_sample.jsonl"
+def evidence_path() -> str:
+    """One sample file per requested model, so a new run never appends to an old one."""
+    if settings.mock:
+        name = "mock_responses_sample.jsonl"
+    elif settings.jev_model == "jev-latest":
+        name = "jev_responses_sample.jsonl"
+    else:
+        name = f"{settings.jev_model}_responses_sample.jsonl"
     return os.path.join(settings.evidence_dir, name)
 
 
 def _save_evidence(results) -> None:
     """Keep a small sample of untouched API responses as committed proof."""
-    path = _evidence_path()
+    path = evidence_path()
     os.makedirs(settings.evidence_dir, exist_ok=True)
     have = sum(1 for _ in open(path)) if os.path.exists(path) else 0
     with open(path, "a") as f:

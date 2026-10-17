@@ -16,11 +16,26 @@ from .config import settings
 from .questions import ACCURACY_TARGETS, CALIBRATION_BINS, QUESTION_VERSION
 
 DB = settings.database
-_FILTER = "question_version = {qv:String} AND is_mock = {mock:UInt8}"
+# Every metric is for one served model version, so two Jev releases never
+# blend into one number.
+_FILTER = ("question_version = {qv:String} AND is_mock = {mock:UInt8} "
+           "AND model_served = {model:String}")
+
+
+def report_model() -> str:
+    """REPORT_MODEL if set, else the version TypeSafe last served for JEV_MODEL."""
+    if settings.report_model:
+        return settings.report_model
+    df = store.query_df(f"""
+        SELECT model_served FROM {DB}.jev_calls
+        WHERE ok AND model_requested = {{requested:String}} AND is_mock = {{mock:UInt8}}
+        ORDER BY called_at DESC LIMIT 1
+    """, requested=settings.jev_model, mock=int(settings.mock))
+    return str(df.iloc[0, 0]) if not df.empty else settings.jev_model
 
 
 def _params() -> dict:
-    return {"qv": QUESTION_VERSION, "mock": int(settings.mock)}
+    return {"qv": QUESTION_VERSION, "mock": int(settings.mock), "model": report_model()}
 
 
 def summary() -> pd.DataFrame:
@@ -120,8 +135,11 @@ def provenance() -> dict:
             groupUniqArray(run_id)                       AS run_ids,
             max(is_mock)                                 AS any_mock
         FROM {DB}.jev_calls
-        WHERE {_FILTER} AND model_requested = {{model:String}}
-    """, **_params(), model=settings.jev_model)
+        WHERE question_version = {{qv:String}} AND is_mock = {{mock:UInt8}}
+          -- failed calls have no served model; count them against the request
+          AND (model_served = {{model:String}}
+               OR (NOT ok AND model_requested = {{requested:String}}))
+    """, **_params(), requested=settings.jev_model)
     p = df.iloc[0].to_dict()
     p["models_served"] = sorted(p["models_served"])
     p["cost_usd"] = (p["input_tokens"] * settings.input_price_per_m
@@ -148,7 +166,7 @@ def compute() -> Results:
     if summary().empty:
         raise ValueError(
             f"No labelled decisions for question version {QUESTION_VERSION} "
-            f"(mock={settings.mock}). Stream tickets first (`make produce`), "
+            f"(model={report_model()}, mock={settings.mock}). Stream tickets first (`make produce`), "
             "then materialize jev_decisions."
         )
     rel = reliability()

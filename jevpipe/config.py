@@ -29,6 +29,9 @@ class Settings:
 
     jev_model: str = _env("JEV_MODEL", "jev-latest")
     jev_concurrency: int = int(_env("JEV_CONCURRENCY", "16"))
+    # Served version the report covers (e.g. jev-1.13.0). Empty = whatever
+    # TypeSafe last served for JEV_MODEL, so an alias like jev-latest resolves.
+    report_model: str = _env("REPORT_MODEL", "")
     # Synthetic responses for testing the pipeline without an API key.
     mock: bool = _env("JEV_MOCK", "0") == "1"
 
