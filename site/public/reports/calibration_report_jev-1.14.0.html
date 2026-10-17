@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Jev Calibration Report</title>
+<style>
+:root { color-scheme: light; --bg:#fcfcfb; --fg:#0b0b0b; --fg2:#52514e; --line:#e4e3df; --card:#ffffff;
+  --s1:#2a78d6; --s2:#eb6834; --okbg:#e8f5ee; --okfg:#0b5c38; --warnbg:#fff3e0; --warnfg:#7a4300; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { color-scheme: dark; --bg:#1a1a19; --fg:#f0efec;
+  --fg2:#c3c2b7; --line:#3a3936; --card:#222220; --s1:#3987e5; --s2:#d95926; --okbg:#173326; --okfg:#9be0bb;
+  --warnbg:#3a2a12; --warnfg:#ffd18a; } }
+:root[data-theme="dark"] { color-scheme: dark; --bg:#1a1a19; --fg:#f0efec; --fg2:#c3c2b7; --line:#3a3936; --card:#222220;
+  --s1:#3987e5; --s2:#d95926; --okbg:#173326; --okfg:#9be0bb; --warnbg:#3a2a12; --warnfg:#ffd18a; }
+* { box-sizing: border-box; }
+body { margin:0; background:var(--bg); color:var(--fg); font:15px/1.55 system-ui,-apple-system,"Segoe UI",sans-serif; }
+main { max-width: 960px; margin: 0 auto; padding: 32px 16px 64px; }
+h1 { font-size: 26px; margin: 0 0 4px; } h2 { font-size: 18px; margin: 36px 0 8px; }
+p.sub { color: var(--fg2); margin: 0 0 20px; }
+.banner { padding: 12px 14px; border-radius: 8px; margin: 16px 0; }
+.banner.ok { background: var(--okbg); color: var(--okfg); } .banner.warn { background: var(--warnbg); color: var(--warnfg); }
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; }
+.tile { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; }
+.tile .k { color: var(--fg2); font-size: 13px; } .tile .v { font-size: 22px; font-weight: 600; }
+.charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+figure { margin: 0; background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 12px; }
+figcaption { font-weight: 600; margin-bottom: 4px; } figure p { color: var(--fg2); font-size: 13px; margin: 0 0 6px; }
+svg { width: 100%; height: auto; display: block; }
+.grid { stroke: var(--line); stroke-width: 1; } .axis { stroke: var(--fg2); stroke-width: 1; }
+.tick, .axlabel, .reflabel { fill: var(--fg2); font-size: 12px; }
+.ref { stroke: var(--fg2); stroke-dasharray: 4 4; fill: none; stroke-width: 1; }
+.line { fill: none; stroke-width: 2; stroke-linejoin: round; }
+.dot { stroke: var(--card); stroke-width: 2; cursor: default; } .dot:hover { r: 7; }
+.legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: 13px; color: var(--fg2); margin: 8px 0; }
+.legend i { display: inline-block; width: 12px; height: 3px; border-radius: 2px; margin-right: 6px; vertical-align: middle; }
+.tbl { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+thead th { color: var(--fg2); font-weight: 600; } table.kv th { color: var(--fg2); font-weight: 500; width: 40%; }
+code { font-size: 13px; } details { margin-top: 8px; } summary { cursor: pointer; color: var(--fg2); }
+footer { color: var(--fg2); font-size: 13px; margin-top: 40px; }
+</style></head>
+<body><main>
+<h1>Is Jev calibrated on real banking support tickets?</h1>
+<p class="sub">Banking77 test set · Kafka → ClickHouse → Airflow → TypeSafe Jev → ClickHouse ·
+generated 2026-10-17 02:06 UTC</p>
+<div class="banner ok"><strong>Verified Jev run.</strong> Every decision below came back from TypeSafe's API, served by jev-1.14.0.</div>
+<div class="tiles"><div class="tile"><div class="k">Tickets decided</div><div class="v">3,080</div></div><div class="tile"><div class="k">Questions per call</div><div class="v">11</div></div><div class="tile"><div class="k">Latency p50 / p95</div><div class="v">155 / 280 ms</div></div><div class="tile"><div class="k">Total cost</div><div class="v">$0.60</div></div></div>
+
+<h2>Two ways to ask the same question</h2>
+<div class="tbl"><table><thead><tr><th>Strategy</th><th>Tickets</th><th>Accuracy</th>
+<th>Mean stated probability</th><th>ECE (lower is better)</th></tr></thead><tbody><tr><td>Fan-out: group × within-group</td><td>3,080</td><td>70.7%</td><td>84.5%</td><td>0.139</td></tr><tr><td>Flat 77-way Choice</td><td>3,080</td><td>81.4%</td><td>89.8%</td><td>0.085</td></tr></tbody></table></div>
+
+<h2>Calibration and routing</h2>
+<div class="legend"><span><i style="background:var(--s1)"></i>Flat 77-way Choice</span><span><i style="background:var(--s2)"></i>Fan-out: group × within-group</span></div>
+<div class="charts">
+<figure><figcaption>Reliability diagram</figcaption>
+<p>Points on the dashed line mean Jev's probabilities can be taken at face value.</p>
+<svg viewBox="0 0 560 360" role="img" aria-label="Reliability diagram"><line class="grid" x1="52" x2="544" y1="316" y2="316"/><text class="tick" x="44" y="320" text-anchor="end">0%</text><text class="tick" x="52" y="334" text-anchor="middle">0%</text><line class="grid" x1="52" x2="544" y1="256.0" y2="256.0"/><text class="tick" x="44" y="260.0" text-anchor="end">20%</text><text class="tick" x="150.4" y="334" text-anchor="middle">20%</text><line class="grid" x1="52" x2="544" y1="196.0" y2="196.0"/><text class="tick" x="44" y="200.0" text-anchor="end">40%</text><text class="tick" x="248.8" y="334" text-anchor="middle">40%</text><line class="grid" x1="52" x2="544" y1="136.0" y2="136.0"/><text class="tick" x="44" y="140.0" text-anchor="end">60%</text><text class="tick" x="347.2" y="334" text-anchor="middle">60%</text><line class="grid" x1="52" x2="544" y1="76.0" y2="76.0"/><text class="tick" x="44" y="80.0" text-anchor="end">80%</text><text class="tick" x="445.6" y="334" text-anchor="middle">80%</text><line class="grid" x1="52" x2="544" y1="16.0" y2="16.0"/><text class="tick" x="44" y="20.0" text-anchor="end">100%</text><text class="tick" x="544.0" y="334" text-anchor="middle">100%</text><line class="axis" x1="52" x2="544" y1="316" y2="316"/><text class="axlabel" x="298.0" y="354" text-anchor="middle">Jev's stated probability for its pick</text><text class="axlabel" transform="translate(14 166.0) rotate(-90)" text-anchor="middle">Actual accuracy</text><path class="ref" d="M52.0,316.0 L544.0,16.0"/><text class="reflabel" x="396.4" y="142.0">perfectly calibrated</text><path class="line" style="stroke:var(--s2)" d="M127.9,116.0 L183.4,244.9 L224.2,262.6 L276.1,223.4 L320.8,187.0 L373.1,199.2 L420.7,168.6 L471.1,127.4 L534.6,50.5"/><circle class="dot" style="fill:var(--s2)" cx="127.9" cy="116.0" r="5"><title>Fan-out: group × within-group
+stated 15% → actual 67%
+3 tickets</title></circle><circle class="dot" style="fill:var(--s2)" cx="183.4" cy="244.9" r="5"><title>Fan-out: group × within-group
+stated 27% → actual 24%
+38 tickets</title></circle><circle class="dot" style="fill:var(--s2)" cx="224.2" cy="262.6" r="5"><title>Fan-out: group × within-group
+stated 35% → actual 18%
+73 tickets</title></circle><circle class="dot" style="fill:var(--s2)" cx="276.1" cy="223.4" r="5"><title>Fan-out: group × within-group
+stated 46% → actual 31%
+149 tickets</title></circle><circle class="dot" style="fill:var(--s2)" cx="320.8" cy="187.0" r="5"><title>Fan-out: group × within-group
+stated 55% → actual 43%
+214 tickets</title></circle><circle class="dot" style="fill:var(--s2)" cx="373.1" cy="199.2" r="5"><title>Fan-out: group × within-group
+stated 65% → actual 39%
+226 tickets</title></circle><circle class="dot" style="fill:var(--s2)" cx="420.7" cy="168.6" r="5"><title>Fan-out: group × within-group
+stated 75% → actual 49%
+228 tickets</title></circle><circle class="dot" style="fill:var(--s2)" cx="471.1" cy="127.4" r="5"><title>Fan-out: group × within-group
+stated 85% → actual 63%
+334 tickets</title></circle><circle class="dot" style="fill:var(--s2)" cx="534.6" cy="50.5" r="5"><title>Fan-out: group × within-group
+stated 98% → actual 88%
+1815 tickets</title></circle><path class="line" style="stroke:var(--s1)" d="M180.7,266.0 L224.6,241.0 L275.9,220.0 L319.6,182.2 L371.6,202.7 L423.3,151.2 L473.2,106.6 L536.9,34.1"/><circle class="dot" style="fill:var(--s1)" cx="180.7" cy="266.0" r="5"><title>Flat 77-way Choice
+stated 26% → actual 17%
+6 tickets</title></circle><circle class="dot" style="fill:var(--s1)" cx="224.6" cy="241.0" r="5"><title>Flat 77-way Choice
+stated 35% → actual 25%
+28 tickets</title></circle><circle class="dot" style="fill:var(--s1)" cx="275.9" cy="220.0" r="5"><title>Flat 77-way Choice
+stated 46% → actual 32%
+75 tickets</title></circle><circle class="dot" style="fill:var(--s1)" cx="319.6" cy="182.2" r="5"><title>Flat 77-way Choice
+stated 54% → actual 45%
+148 tickets</title></circle><circle class="dot" style="fill:var(--s1)" cx="371.6" cy="202.7" r="5"><title>Flat 77-way Choice
+stated 65% → actual 38%
+180 tickets</title></circle><circle class="dot" style="fill:var(--s1)" cx="423.3" cy="151.2" r="5"><title>Flat 77-way Choice
+stated 75% → actual 55%
+193 tickets</title></circle><circle class="dot" style="fill:var(--s1)" cx="473.2" cy="106.6" r="5"><title>Flat 77-way Choice
+stated 86% → actual 70%
+278 tickets</title></circle><circle class="dot" style="fill:var(--s1)" cx="536.9" cy="34.1" r="5"><title>Flat 77-way Choice
+stated 99% → actual 94%
+2172 tickets</title></circle></svg></figure>
+<figure><figcaption>Accuracy vs. coverage</figcaption>
+<p>Auto-handle the most confident tickets first; route the rest to people.</p>
+<svg viewBox="0 0 560 360" role="img" aria-label="Accuracy versus coverage"><line class="grid" x1="52" x2="544" y1="316" y2="316"/><text class="tick" x="44" y="320" text-anchor="end">0%</text><text class="tick" x="52" y="334" text-anchor="middle">0%</text><line class="grid" x1="52" x2="544" y1="256.0" y2="256.0"/><text class="tick" x="44" y="260.0" text-anchor="end">20%</text><text class="tick" x="150.4" y="334" text-anchor="middle">20%</text><line class="grid" x1="52" x2="544" y1="196.0" y2="196.0"/><text class="tick" x="44" y="200.0" text-anchor="end">40%</text><text class="tick" x="248.8" y="334" text-anchor="middle">40%</text><line class="grid" x1="52" x2="544" y1="136.0" y2="136.0"/><text class="tick" x="44" y="140.0" text-anchor="end">60%</text><text class="tick" x="347.2" y="334" text-anchor="middle">60%</text><line class="grid" x1="52" x2="544" y1="76.0" y2="76.0"/><text class="tick" x="44" y="80.0" text-anchor="end">80%</text><text class="tick" x="445.6" y="334" text-anchor="middle">80%</text><line class="grid" x1="52" x2="544" y1="16.0" y2="16.0"/><text class="tick" x="44" y="20.0" text-anchor="end">100%</text><text class="tick" x="544.0" y="334" text-anchor="middle">100%</text><line class="axis" x1="52" x2="544" y1="316" y2="316"/><text class="axlabel" x="298.0" y="354" text-anchor="middle">Share of tickets auto-handled (most confident first)</text><text class="axlabel" transform="translate(14 166.0) rotate(-90)" text-anchor="middle">Accuracy on those tickets</text><path class="line" style="stroke:var(--s2)" d="M195.3,31.1 L195.3,31.1 L195.3,31.1 L195.3,31.1 L195.3,31.1 L195.3,31.1 L195.3,31.1 L195.3,31.1 L195.3,31.1 L195.3,31.1 L195.3,31.1 L195.3,31.1 L195.3,31.1 L195.3,31.1 L195.3,31.1 L195.3,31.1 L195.3,31.1 L195.3,31.1 L195.3,31.1 L195.3,31.1 L195.3,31.1 L195.3,31.1 L195.3,31.1 L195.3,31.1 L195.3,31.1 L195.3,31.1 L195.3,31.1 L195.3,31.1 L195.3,31.1 L195.3,31.1 L195.3,31.1 L195.3,31.1 L195.3,31.1 L195.3,31.1 L195.3,31.1 L195.3,31.1 L196.1,31.0 L238.6,33.7 L238.6,33.7 L238.6,33.7 L238.6,33.7 L238.6,33.7 L238.6,33.7 L238.6,33.7 L238.6,33.7 L238.6,33.7 L238.6,33.7 L242.7,34.1 L260.3,36.2 L260.3,36.2 L260.3,36.2 L260.3,36.2 L260.3,36.2 L264.1,36.8 L277.6,39.4 L277.6,39.4 L277.6,39.4 L281.4,39.4 L289.9,40.8 L289.9,40.8 L293.2,42.0 L300.7,42.8 L300.7,42.8 L304.7,43.3 L309.3,43.9 L312.5,44.7 L321.3,45.9 L321.3,45.9 L323.9,46.3 L329.5,47.4 L332.3,47.8 L338.3,49.6 L340.2,50.3 L345.9,50.9 L348.5,51.9 L353.0,52.8 L357.6,53.8 L362.1,54.3 L363.8,54.6 L368.3,55.4 L371.6,56.3 L376.1,57.3 L380.4,58.6 L384.1,59.3 L389.2,61.0 L391.8,61.8 L395.6,62.6 L399.8,63.3 L403.6,64.1 L407.6,65.2 L411.6,66.2 L415.6,67.3 L419.7,68.9 L423.6,70.6 L427.7,71.9 L431.7,72.7 L435.5,74.2 L439.5,75.7 L445.3,77.3 L447.5,78.3 L451.7,78.7 L455.5,79.8 L459.7,81.6 L463.5,82.5 L467.8,83.7 L471.6,84.3 L475.6,85.7 L479.5,86.4 L484.3,87.6 L487.5,88.9 L491.4,89.2 L495.4,90.0 L499.4,91.0 L503.6,92.2 L507.4,93.0 L511.6,93.7 L515.6,95.1 L519.4,95.9 L523.6,97.3 L527.4,98.6 L531.4,99.9 L535.4,101.4 L539.4,102.8 L543.4,103.9 L544.0,103.9"><title>Fan-out: group × within-group</title></path><path class="line" style="stroke:var(--s1)" d="M255.7,23.3 L255.7,23.3 L255.7,23.3 L255.7,23.3 L255.7,23.3 L255.7,23.3 L255.7,23.3 L255.7,23.3 L255.7,23.3 L255.7,23.3 L255.7,23.3 L255.7,23.3 L255.7,23.3 L255.7,23.3 L255.7,23.3 L255.7,23.3 L255.7,23.3 L255.7,23.3 L255.7,23.3 L255.7,23.3 L255.7,23.3 L255.7,23.3 L255.7,23.3 L255.7,23.3 L255.7,23.3 L255.7,23.3 L255.7,23.3 L255.7,23.3 L255.7,23.3 L255.7,23.3 L255.7,23.3 L255.7,23.3 L255.7,23.3 L255.7,23.3 L255.7,23.3 L255.7,23.3 L255.7,23.3 L255.7,23.3 L255.7,23.3 L255.7,23.3 L255.7,23.3 L255.7,23.3 L255.7,23.3 L255.7,23.3 L255.7,23.3 L255.7,23.3 L255.7,23.3 L255.7,23.3 L255.7,23.3 L255.7,23.3 L255.7,23.3 L301.8,25.6 L301.8,25.6 L301.8,25.6 L301.8,25.6 L301.8,25.6 L301.8,25.6 L301.8,25.6 L301.8,25.6 L301.8,25.6 L301.8,25.6 L301.8,25.6 L301.8,25.6 L326.9,27.0 L326.9,27.0 L326.9,27.0 L326.9,27.0 L326.9,27.0 L326.9,27.0 L341.6,28.1 L341.6,28.1 L341.6,28.1 L341.6,28.1 L354.1,29.6 L354.1,29.6 L354.1,29.6 L364.8,30.4 L364.8,30.4 L364.8,30.4 L370.8,31.3 L383.1,32.4 L383.1,32.4 L383.1,32.4 L392.9,33.9 L392.9,33.9 L392.9,33.9 L399.0,34.1 L404.5,34.9 L404.5,34.9 L408.9,35.7 L413.2,36.8 L419.7,37.9 L419.7,37.9 L423.6,38.4 L430.4,40.4 L433.9,40.8 L437.0,41.5 L440.6,41.8 L446.7,43.4 L450.9,43.8 L455.2,45.5 L459.2,46.6 L463.2,47.7 L466.5,48.6 L470.0,49.4 L472.8,49.6 L476.1,50.8 L479.9,52.3 L485.5,54.0 L489.5,55.4 L492.7,56.1 L497.0,57.8 L502.9,60.0 L505.0,60.6 L507.4,60.9 L511.7,62.1 L516.2,63.4 L522.8,65.0 L524.8,65.8 L528.8,66.8 L532.0,67.7 L536.5,68.9 L539.8,70.4 L543.4,71.5 L544.0,71.8"><title>Flat 77-way Choice</title></path></svg></figure>
+</div>
+<details><summary>Reliability data as a table</summary><div class="tbl"><table><thead><tr><th>Strategy</th>
+<th>Probability bin</th><th>Tickets</th><th>Mean stated</th><th>Actual accuracy</th></tr></thead>
+<tbody><tr><td>Fan-out</td><td>0.1–0.2</td><td>3</td><td>15.4%</td><td>66.7%</td></tr><tr><td>Fan-out</td><td>0.2–0.3</td><td>38</td><td>26.7%</td><td>23.7%</td></tr><tr><td>Fan-out</td><td>0.3–0.4</td><td>73</td><td>35.0%</td><td>17.8%</td></tr><tr><td>Fan-out</td><td>0.4–0.5</td><td>149</td><td>45.5%</td><td>30.9%</td></tr><tr><td>Fan-out</td><td>0.5–0.6</td><td>214</td><td>54.6%</td><td>43.0%</td></tr><tr><td>Fan-out</td><td>0.6–0.7</td><td>226</td><td>65.3%</td><td>38.9%</td></tr><tr><td>Fan-out</td><td>0.7–0.8</td><td>228</td><td>74.9%</td><td>49.1%</td></tr><tr><td>Fan-out</td><td>0.8–0.9</td><td>334</td><td>85.2%</td><td>62.9%</td></tr><tr><td>Fan-out</td><td>0.9–1.0</td><td>1,815</td><td>98.1%</td><td>88.5%</td></tr><tr><td>Flat 77-way Choice</td><td>0.2–0.3</td><td>6</td><td>26.2%</td><td>16.7%</td></tr><tr><td>Flat 77-way Choice</td><td>0.3–0.4</td><td>28</td><td>35.1%</td><td>25.0%</td></tr><tr><td>Flat 77-way Choice</td><td>0.4–0.5</td><td>75</td><td>45.5%</td><td>32.0%</td></tr><tr><td>Flat 77-way Choice</td><td>0.5–0.6</td><td>148</td><td>54.4%</td><td>44.6%</td></tr><tr><td>Flat 77-way Choice</td><td>0.6–0.7</td><td>180</td><td>65.0%</td><td>37.8%</td></tr><tr><td>Flat 77-way Choice</td><td>0.7–0.8</td><td>193</td><td>75.5%</td><td>54.9%</td></tr><tr><td>Flat 77-way Choice</td><td>0.8–0.9</td><td>278</td><td>85.6%</td><td>69.8%</td></tr><tr><td>Flat 77-way Choice</td><td>0.9–1.0</td><td>2,172</td><td>98.6%</td><td>94.0%</td></tr></tbody></table></div></details>
+
+<h2>How much can run without a human?</h2>
+<div class="tbl"><table><thead><tr><th>Strategy</th><th>Accuracy target</th><th>Share auto-handled</th>
+<th>Confidence threshold</th></tr></thead><tbody><tr><td>Fan-out: group × within-group</td><td>90%</td><td>55.0%</td><td>0.920</td></tr><tr><td>Fan-out: group × within-group</td><td>95%</td><td>29.3%</td><td>0.990</td></tr><tr><td>Fan-out: group × within-group</td><td>98%</td><td>0.0%</td><td>—</td></tr><tr><td>Flat 77-way Choice</td><td>90%</td><td>81.9%</td><td>0.770</td></tr><tr><td>Flat 77-way Choice</td><td>95%</td><td>63.6%</td><td>0.950</td></tr><tr><td>Flat 77-way Choice</td><td>98%</td><td>0.0%</td><td>—</td></tr></tbody></table></div>
+
+<h2>Most common mistakes</h2>
+<div class="tbl"><table><thead><tr><th>Strategy</th><th>Actual intent</th><th>Jev chose</th><th>Count</th>
+<th>Mean stated probability</th></tr></thead><tbody><tr><td>Fan-out</td><td><code>card_acceptance</code></td><td><code>declined_card_payment</code></td><td>36</td><td>66.7%</td></tr><tr><td>Fan-out</td><td><code>card_payment_wrong_exchange_rate</code></td><td><code>exchange_rate</code></td><td>34</td><td>79.4%</td></tr><tr><td>Fan-out</td><td><code>card_swallowed</code></td><td><code>atm_support</code></td><td>33</td><td>63.6%</td></tr><tr><td>Flat 77-way Choice</td><td><code>get_physical_card</code></td><td><code>change_pin</code></td><td>30</td><td>61.5%</td></tr><tr><td>Flat 77-way Choice</td><td><code>card_delivery_estimate</code></td><td><code>card_arrival</code></td><td>28</td><td>81.2%</td></tr><tr><td>Fan-out</td><td><code>card_delivery_estimate</code></td><td><code>card_arrival</code></td><td>25</td><td>82.2%</td></tr><tr><td>Fan-out</td><td><code>compromised_card</code></td><td><code>card_payment_not_recognised</code></td><td>23</td><td>84.6%</td></tr><tr><td>Fan-out</td><td><code>apple_pay_or_google_pay</code></td><td><code>topping_up_by_card</code></td><td>23</td><td>83.6%</td></tr><tr><td>Fan-out</td><td><code>wrong_exchange_rate_for_cash_withdrawal</code></td><td><code>exchange_rate</code></td><td>22</td><td>76.9%</td></tr><tr><td>Fan-out</td><td><code>top_up_by_bank_transfer_charge</code></td><td><code>transfer_fee_charged</code></td><td>20</td><td>83.9%</td></tr></tbody></table></div>
+
+<h2>Provenance</h2>
+<p class="sub">Model versions and request IDs come from TypeSafe's responses. Token totals can be
+checked against the usage page in the TypeSafe console.</p>
+<div class="tbl"><table class="kv"><tbody><tr><th>models served (from API response)</th><td>jev-1.14.0</td></tr><tr><th>model requested</th><td>jev-1.14.0</td></tr><tr><th>successful calls / failed</th><td>3,080 / 0</td></tr><tr><th>calls with x-typesafe-request-id</th><td>3,080</td></tr><tr><th>input / output tokens</th><td>14,262,330 / 5,956,805</td></tr><tr><th>latency p99</th><td>422 ms</td></tr><tr><th>retries</th><td>0</td></tr><tr><th>first / last call (UTC)</th><td>2026-10-17 02:05:29.222000 → 2026-10-17 02:06:29.571000</td></tr><tr><th>question version</th><td>870526c0ac48</td></tr><tr><th>run ids</th><td>ee0f08aa4cdf, a1268b39a436</td></tr><tr><th>sample of raw responses</th><td>evidence/jev-1.14.0_responses_sample.jsonl</td></tr></tbody></table></div>
+
+<footer>Dataset: Banking77 (PolyAI, CC-BY-4.0). Calibration is measured over groups of predictions;
+it does not guarantee any single answer.</footer>
+</main></body></html>
