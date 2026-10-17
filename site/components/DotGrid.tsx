@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import type { HeroSeries } from "@/lib/types";
 import { cutoff as fmtCutoff } from "@/lib/format";
 
 const FILL_MS = 600;
@@ -10,37 +9,53 @@ const TAP_RADIUS = 12;
 /**
  * Every ticket as one dot, highest confidence first, row by row. Right answers
  * are small filled graphite dots, wrong ones vermilion rings, so the two differ
- * by shape as well as color. Tickets below the cutoff fade to 18%, and a
- * stepped line (signal yellow with a graphite core) marks the split.
+ * by shape as well as color. Tickets below the cutoff fade to 18%, a stepped
+ * line (signal yellow with a graphite core) marks the split, and a yellow mark
+ * at the grid's left edge shows the row where the cutoff falls.
+ *
+ * First load: if any part of the grid is in view when the page loads, it is
+ * drawn at once. Otherwise it fills in, in sorted order, the first time any
+ * part of it scrolls into view. Never animated under reduced motion.
  */
 export function DotGrid({
-  series,
+  correct,
+  confidence,
   cols,
   handled,
   onPick,
 }: {
-  series: HeroSeries;
+  correct: ArrayLike<number>;
+  /** Per-dot confidence, for the hover note; absent until the full data loads. */
+  confidence?: number[];
   cols: number;
   handled: number;
-  onPick: (sortedIndex: number) => void;
+  onPick?: (sortedIndex: number) => void;
 }) {
   const wrap = useRef<HTMLDivElement>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
-  const shown = useRef(-1); // dots revealed so far; -1 until the fill-in has run
+  const phase = useRef<"waiting" | "filling" | "done">("waiting");
+  const shown = useRef(0);
+  const raf = useRef(0);
   const [width, setWidth] = useState(0);
   const [hover, setHover] = useState<{ i: number; x: number; y: number } | null>(null);
 
-  const n = series.confidence.length;
+  const n = correct.length;
   const rows = Math.ceil(n / cols);
   const pitch = width / cols;
-  const height = Math.round(rows * pitch);
+  const height = rows * pitch;
+  // Where the split line meets the grid's left edge.
+  const splitRow = Math.floor(handled / cols);
+  const markerY = handled % cols === 0 ? splitRow * pitch : (splitRow + 1) * pitch;
 
   useEffect(() => {
     const el = wrap.current;
     if (!el) return;
     const ro = new ResizeObserver(([e]) => setWidth(Math.floor(e.contentRect.width)));
     ro.observe(el);
-    return () => ro.disconnect();
+    return () => {
+      ro.disconnect();
+      cancelAnimationFrame(raf.current);
+    };
   }, []);
 
   // Drawing reads the latest props through a ref so the fill-in can call it per frame.
@@ -49,9 +64,11 @@ export function DotGrid({
     const c = canvas.current;
     if (!c || width === 0) return;
     const dpr = window.devicePixelRatio || 1;
-    if (c.width !== Math.round(width * dpr) || c.height !== Math.round(height * dpr)) {
-      c.width = Math.round(width * dpr);
-      c.height = Math.round(height * dpr);
+    const W = Math.round(width * dpr);
+    const H = Math.round(height * dpr);
+    if (c.width !== W || c.height !== H) {
+      c.width = W;
+      c.height = H;
     }
     const ctx = c.getContext("2d");
     if (!ctx) return;
@@ -70,7 +87,7 @@ export function DotGrid({
       ctx.globalAlpha = alpha;
       ctx.beginPath();
       for (let i = from; i < to; i++) {
-        if (!series.correct[i]) continue;
+        if (!correct[i]) continue;
         const x = (i % cols) * pitch + pitch / 2;
         const y = Math.floor(i / cols) * pitch + pitch / 2;
         ctx.moveTo(x + r, y);
@@ -80,7 +97,7 @@ export function DotGrid({
       ctx.fill();
       ctx.beginPath();
       for (let i = from; i < to; i++) {
-        if (series.correct[i]) continue;
+        if (correct[i]) continue;
         const x = (i % cols) * pitch + pitch / 2;
         const y = Math.floor(i / cols) * pitch + pitch / 2;
         ctx.moveTo(x + ringR, y);
@@ -94,18 +111,17 @@ export function DotGrid({
     pass(handled, count, 0.18);
 
     if (count >= n && handled > 0 && handled < n) {
-      const row = Math.floor(handled / cols);
       const col = handled % cols;
       const path = () => {
         ctx.beginPath();
         if (col === 0) {
-          ctx.moveTo(0, row * pitch);
-          ctx.lineTo(width, row * pitch);
+          ctx.moveTo(0, splitRow * pitch);
+          ctx.lineTo(width, splitRow * pitch);
         } else {
-          ctx.moveTo(0, (row + 1) * pitch);
-          ctx.lineTo(col * pitch, (row + 1) * pitch);
-          ctx.lineTo(col * pitch, row * pitch);
-          ctx.lineTo(width, row * pitch);
+          ctx.moveTo(0, (splitRow + 1) * pitch);
+          ctx.lineTo(col * pitch, (splitRow + 1) * pitch);
+          ctx.lineTo(col * pitch, splitRow * pitch);
+          ctx.lineTo(width, splitRow * pitch);
         }
       };
       ctx.globalAlpha = 1;
@@ -121,38 +137,41 @@ export function DotGrid({
     }
   };
 
-  // The page's one orchestrated moment: the field fills in sorted order, once.
+  // Decide, once the grid has a size, whether to draw at once or fill in later.
   useEffect(() => {
-    if (width === 0) return;
-    if (shown.current >= 0) {
+    const el = wrap.current;
+    if (!el || width === 0 || phase.current !== "waiting") return;
+    const rect = el.getBoundingClientRect();
+    const inView = rect.bottom > 0 && rect.top < window.innerHeight;
+    if (inView || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      phase.current = "done";
       draw.current(n);
       return;
     }
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      shown.current = n;
-      draw.current(n);
-      return;
-    }
-    shown.current = 0;
-    const start = performance.now();
-    let raf = 0;
-    const step = (t: number) => {
-      const p = Math.min(1, (t - start) / FILL_MS);
-      const eased = 1 - Math.pow(1 - p, 2);
-      shown.current = p >= 1 ? n : Math.floor(eased * n);
-      draw.current(shown.current);
-      if (p < 1) raf = requestAnimationFrame(step);
-    };
-    raf = requestAnimationFrame(step);
-    return () => {
-      cancelAnimationFrame(raf);
-      shown.current = n;
-    };
+    const io = new IntersectionObserver(
+      ([e]) => {
+        if (!e.isIntersecting || phase.current !== "waiting") return;
+        io.disconnect();
+        phase.current = "filling";
+        const start = performance.now();
+        const step = (t: number) => {
+          const p = Math.min(1, (t - start) / FILL_MS);
+          shown.current = p >= 1 ? n : Math.floor((1 - Math.pow(1 - p, 2)) * n);
+          draw.current(shown.current);
+          if (p < 1) raf.current = requestAnimationFrame(step);
+          else phase.current = "done";
+        };
+        raf.current = requestAnimationFrame(step);
+      },
+      { threshold: 0 },
+    );
+    io.observe(el);
+    return () => io.disconnect();
   }, [width, n]);
 
   useEffect(() => {
-    if (shown.current >= n) draw.current(n);
-  }, [series, handled, width, height, n]);
+    if (phase.current === "done") draw.current(n);
+  }, [correct, handled, width, height, n]);
 
   // Nearest dot within TAP_RADIUS of the pointer (a fingertip is wider than a dot).
   const nearest = (clientX: number, clientY: number) => {
@@ -169,25 +188,38 @@ export function DotGrid({
   };
 
   return (
-    <div ref={wrap} className="relative w-full">
+    // The aspect ratio reserves the grid's space before anything is drawn.
+    <div ref={wrap} className="relative w-full" style={{ aspectRatio: `${cols} / ${rows}` }}>
       <canvas
         ref={canvas}
         role="img"
         aria-label={`${n} tickets as dots, highest confidence first. ${handled} are at or above the cutoff.`}
-        style={{ width: "100%", height, display: "block", cursor: hover && hover.i >= 0 ? "pointer" : "default" }}
+        className="absolute inset-0 block h-full w-full"
+        style={{ cursor: onPick && hover && hover.i >= 0 ? "pointer" : "default" }}
         onPointerMove={(e) => e.pointerType === "mouse" && setHover(nearest(e.clientX, e.clientY))}
         onPointerLeave={() => setHover(null)}
         onClick={(e) => {
           const { i } = nearest(e.clientX, e.clientY);
-          if (i >= 0) onPick(i);
+          if (i >= 0 && onPick) onPick(i);
         }}
       />
-      {hover && hover.i >= 0 && (
+      {width > 0 && (
+        <svg
+          aria-hidden
+          width="10"
+          height="10"
+          className="pointer-events-none absolute -left-3.5 overflow-visible"
+          style={{ top: Math.max(0, Math.min(height, markerY)) - 5 }}
+        >
+          <path d="M0.5 0.5 L9.5 5 L0.5 9.5 Z" fill="var(--signal)" stroke="var(--ink)" strokeWidth="1" />
+        </svg>
+      )}
+      {hover && hover.i >= 0 && confidence && (
         <div
           className="num pointer-events-none absolute z-10 border border-hairline bg-raised px-2 py-1 text-xs whitespace-nowrap"
           style={{ left: Math.min(hover.x + 14, Math.max(0, width - 230)), top: hover.y + 16 }}
         >
-          Confidence {fmtCutoff(series.confidence[hover.i])}, {series.correct[hover.i] ? "right" : "wrong"}. Click to read it.
+          Confidence {fmtCutoff(confidence[hover.i])}, {correct[hover.i] ? "right" : "wrong"}. Click to read it.
         </div>
       )}
     </div>

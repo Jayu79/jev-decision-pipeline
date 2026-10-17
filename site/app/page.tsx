@@ -7,7 +7,7 @@ import { Schematic, type Step } from "@/components/Schematic";
 import { SiteState } from "@/components/SiteState";
 import { getDecisions, getHero, getMeta, getSummary, getTicketCount } from "@/lib/data";
 import { cutoff, int, pct } from "@/lib/format";
-import { DEFAULT, readout } from "@/lib/metrics";
+import { DEFAULT, gridCutoffs, readout } from "@/lib/metrics";
 import { OG_IMAGE } from "@/lib/og";
 import { MODELS, STRATEGIES, type CoverageAt, type Model, type ReliabilityBin, type Strategy } from "@/lib/types";
 
@@ -20,7 +20,6 @@ const nTickets = getTicketCount();
 const nIntents = meta.areas.reduce((n, a) => n + a.intents.length, 0);
 const [M13, M14] = MODELS;
 const at = (c: CoverageAt[], target: number) => c.find((x) => Math.abs(x.target - target) < 1e-9) as CoverageAt;
-const headline = at(summary[DEFAULT.model][DEFAULT.strategy].coverage_at, 0.95);
 
 export function generateMetadata(): Metadata {
   const description = `${pct(headline.coverage)} of ${int(nTickets)} banking support tickets handled at 95% accuracy. A calibration study of TypeSafe's Jev (${M13} and ${M14}) by Jayanth Veeramachaneni.`;
@@ -42,6 +41,12 @@ const byModel = <T,>(f: (m: Model, s: Strategy) => T) =>
     Model,
     Record<Strategy, T>
   >;
+
+const hero = getHero();
+const targets = summary[M13].flat.coverage_at.map((c) => c.target);
+/** Two-decimal cutoffs for every target, recomputed from the tickets (see gridCutoffs). */
+const grid = byModel((m, s) => gridCutoffs(hero[m][s], targets));
+const headline = at(grid[DEFAULT.model][DEFAULT.strategy], 0.95);
 
 /** Weighted stated probability and accuracy over the reliability bins at or above `from`. */
 function above(bins: ReliabilityBin[], from: number) {
@@ -65,9 +70,9 @@ function runMonth() {
 }
 
 export default function Page() {
-  const coverageAt = byModel((m, s) => summary[m][s].coverage_at);
+  const coverageAt = grid;
   const bins = byModel((m, s) => summary[m][s].reliability);
-  const initial = readout(getHero()[DEFAULT.model][DEFAULT.strategy], DEFAULT.cut);
+  const initial = readout(hero[DEFAULT.model][DEFAULT.strategy], DEFAULT.cut);
   const f13 = summary[M13].flat;
   const f14 = summary[M14].flat;
   const o13 = summary[M13].fanout;
@@ -91,7 +96,7 @@ export default function Page() {
               Jev to sort each into one of {nIntents} intents. Jev says how sure it is. Choose a cutoff, and every ticket at
               or above it is handled by Jev alone; the rest go to a person.
             </Para>
-            <Instrument nIntents={nIntents} coverageAt={coverageAt} initial={initial} />
+            <Instrument nIntents={nIntents} coverageAt={coverageAt} initial={initial} initialBits={hero[DEFAULT.model][DEFAULT.strategy].correct.join("")} />
           </section>
 
           <Section id="calibration" title="Is Jev's confidence honest?" space="mt-32">
@@ -138,12 +143,12 @@ export default function Page() {
           <Section id="explorer" title="Read the tickets" space="mt-32">
             <Para
               className="mt-5"
-              n={3}
+              n={4}
               note="Confident and wrong means confidence 0.9 or higher with the wrong intent: the mistakes a cutoff can't catch."
             >
               Every message Jev saw, with the intent it picked, how sure it was, and its five most likely answers. Filter for
               the mistakes that matter most: wrong answers Jev was confident about.
-              <Ref n={3} />
+              <Ref n={4} />
             </Para>
             <Explorer areas={meta.areas} />
           </Section>
@@ -295,7 +300,7 @@ export default function Page() {
       sub?: (m: Model) => string | null;
       better: "higher" | "lower" | "calib";
     };
-    const cov = (s: Strategy, target: number) => (m: Model) => at(summary[m][s].coverage_at, target);
+    const cov = (s: Strategy, target: number) => (m: Model) => at(grid[m][s], target);
     const covRow = (s: Strategy, target: number): Row => ({
       label: `Coverage at ${Math.round(target * 100)}% accuracy`,
       values: MODELS.map((m) => (cov(s, target)(m).cutoff === null ? null : cov(s, target)(m).coverage)) as [number | null, number | null],
@@ -360,8 +365,8 @@ export default function Page() {
     };
 
     // The takeaway is written from the numbers, so it can't drift from them.
-    const c13 = at(f13.coverage_at, 0.95);
-    const c14 = at(f14.coverage_at, 0.95);
+    const c13 = at(grid[M13].flat, 0.95);
+    const c14 = at(grid[M14].flat, 0.95);
     const accGap = (f14.accuracy - f13.accuracy) * 100;
     const calibrated = f14.ece < f13.ece ? "better calibrated" : "not better calibrated";
     const accuracy =
@@ -372,15 +377,15 @@ export default function Page() {
           : `and less accurate (${pct(f14.accuracy)} vs ${pct(f13.accuracy)})`;
     const covGap = (c14.coverage - c13.coverage) * 100;
     const coverage = `${Math.abs(covGap) < 2 ? "slightly " : ""}${covGap < 0 ? "less" : "more"}`;
-    const o95_13 = at(o13.coverage_at, 0.95);
-    const o95_14 = at(o14.coverage_at, 0.95);
+    const o95_13 = at(grid[M13].fanout, 0.95);
+    const o95_14 = at(grid[M14].fanout, 0.95);
     const same = meta.models[M13].question_version === meta.models[M14].question_version;
 
     return (
       <>
         <Para
           className="mt-5"
-          n={4}
+          n={3}
           note={
             same
               ? `Both runs asked the same ${meta.models[M13].questions_per_call} questions per call (question version ${meta.models[M13].question_version}), so only the model differs.`
@@ -388,7 +393,7 @@ export default function Page() {
           }
         >
           Same {int(nTickets)} tickets, same questions.
-          <Ref n={4} /> On the flat question, {M14} is {calibrated} (ECE {f13.ece.toFixed(3)} to {f14.ece.toFixed(3)}){" "}
+          <Ref n={3} /> On the flat question, {M14} is {calibrated} (ECE {f13.ece.toFixed(3)} to {f14.ece.toFixed(3)}){" "}
           {accuracy}, and it covers {coverage} at 95% accuracy ({pct(c14.coverage)} vs {pct(c13.coverage)}).
           {o95_13.cutoff === null &&
             o95_14.cutoff !== null &&
@@ -456,7 +461,8 @@ export default function Page() {
             <Caption n={3}>
               {M13} and {M14} on the same tickets. A dot marks the better value in each row; for mean stated confidence,
               better means closer to that model&apos;s own accuracy. Coverage is the share of tickets Jev can handle alone
-              while staying at that accuracy.
+              while staying at that accuracy, at the best cutoff on a 0.01 grid; the calibration reports list exact
+              cutoffs, which can cover slightly more.
             </Caption>
           </figure>
         </Grid>
@@ -485,7 +491,7 @@ export default function Page() {
       <div className="mt-14">
         <h3 className="text-sm font-semibold">How you know these are real Jev answers</h3>
         <p className="prose-text mt-1">
-          The served model and the x-typesafe-request-id header come from TypeSafe&apos;s responses, and token totals can
+          The served model and the <span className="whitespace-nowrap">x-typesafe-request-id</span> header come from TypeSafe&apos;s responses, and token totals can
           be checked against TypeSafe&apos;s usage page.
         </p>
         <dl className="mt-5 grid grid-cols-1 gap-x-6 gap-y-3 border-y border-hairline py-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -536,7 +542,7 @@ function steps(questionsPerCall: number): Step[] {
     },
     {
       name: "Kafka (Redpanda)",
-      detail: ["support_tickets topic", "at-least-once delivery"],
+      detail: ["support_tickets topic", "at-least-once", "delivery"],
       decision: "Built for at-least-once delivery",
       why: "Kafka can deliver a message more than once. Every table downstream is keyed on the ticket's event ID, so a replay or duplicate collapses instead of being counted twice.",
     },
@@ -560,7 +566,7 @@ function steps(questionsPerCall: number): Step[] {
     },
     {
       name: "ClickHouse tables",
-      detail: ["jev_calls, jev_answers,", "strategy_decisions"],
+      detail: ["jev_calls", "jev_answers", "strategy_decisions"],
       decision: "One jev_calls row per request",
       why: "Latency, tokens, retries, the served model and the request ID are stored for every call, so cost and reliability are queryable and reconcile with TypeSafe's usage page.",
     },

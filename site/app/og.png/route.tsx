@@ -3,9 +3,9 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { ImageResponse } from "next/og";
-import { getHero, getMeta, getSummary, getTicketCount } from "@/lib/data";
+import { getHero, getMeta, getTicketCount } from "@/lib/data";
 import { int, pct } from "@/lib/format";
-import { DEFAULT, readout } from "@/lib/metrics";
+import { DEFAULT, gridCutoffs, readout } from "@/lib/metrics";
 
 // A static route (not the opengraph-image file convention) so the export is a real .png file.
 export const dynamic = "force-static";
@@ -17,7 +17,7 @@ const t = (s: string) => s.replace(/, /g, ",\u2009");
 
 export function GET() {
   const series = getHero()[DEFAULT.model][DEFAULT.strategy];
-  const target = getSummary()[DEFAULT.model][DEFAULT.strategy].coverage_at.find((c) => c.target === 0.95)!;
+  const [target] = gridCutoffs(series, [0.95]);
   const cut = target.cutoff ?? DEFAULT.cut;
   const r = readout(series, cut);
   const meta = getMeta();

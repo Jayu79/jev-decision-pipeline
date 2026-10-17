@@ -75,6 +75,40 @@ check(/handled by Jev 64\.5% /.test(html), `default view shows 64.5% handled by 
 check(html.includes("Measured: 64.5% at 95% accuracy"), 'masthead tag reads "Measured: 64.5% at 95% accuracy"');
 check(html.includes(`${handled.toLocaleString("en-US")} tickets`), `default hero shows ${handled.toLocaleString("en-US")} tickets`);
 
+// Footnotes are numbered in reading order: the superscript markers appear as 1, 2, 3, ...
+const rawHtml = readFileSync(join(site, "out", "index.html"), "utf8");
+const refs = [...rawHtml.matchAll(/id="ref-(\d+)"/g)].map((m) => Number(m[1]));
+const notes = new Set([...rawHtml.matchAll(/id="note-(\d+)"/g)].map((m) => Number(m[1])));
+check(
+  refs.length > 0 && refs.every((n, i) => n === i + 1) && refs.every((n) => notes.has(n)),
+  `footnote markers in document order: ${refs.join(", ")}; each has its note`,
+);
+
+// Cutoffs on the page have two decimals, and each is the best cutoff on a 0.01 grid
+// for its target, recomputed here from the per-ticket data (the raw cutoffs above stay
+// in summary.json and the reports).
+const printed = [...html.matchAll(/cutoff (\d\.\d+)/g)].map((m) => m[1]);
+check(printed.length > 0 && printed.every((c) => /^\d\.\d{2}$/.test(c)), `every printed cutoff has two decimals (${printed.length} found)`);
+for (const model of ["jev-1.13.0", "jev-1.14.0"]) {
+  for (const strategy of ["flat", "fanout"]) {
+    const d = data(`decisions_${model}_${strategy}.json`);
+    const col = Object.fromEntries(d.columns.map((c, i) => [c, i]));
+    for (const target of [0.9, 0.95, 0.98]) {
+      let best = null;
+      for (let k = 0; k <= 100; k++) {
+        const c = k / 100;
+        const cov = d.rows.filter((r) => r[col.confidence] >= c - 1e-9);
+        const acc = cov.reduce((a, r) => a + r[col.correct], 0) / cov.length;
+        if (cov.length && acc >= target && (!best || cov.length > best.n)) best = { c, n: cov.length };
+      }
+      if (best) {
+        const shown = `${pct(best.n / d.rows.length)} cutoff ${best.c.toFixed(2)}`;
+        check(html.includes(shown), `${model} ${strategy} at ${pct(target)}: page shows "${shown}"`);
+      }
+    }
+  }
+}
+
 if (failures.length) {
   console.error(`\n${failures.length} mismatch(es):\n  ${failures.join("\n  ")}`);
   process.exit(1);

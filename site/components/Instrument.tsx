@@ -22,11 +22,14 @@ export function Instrument({
   nIntents,
   coverageAt,
   initial,
+  initialBits,
 }: {
   nIntents: number;
   coverageAt: Record<Model, Record<Strategy, CoverageAt[]>>;
   /** Readout for the default state, computed at build time so the page opens with numbers. */
   initial: Readout;
+  /** The default view's right/wrong flags in sorted order ("1" right, "0" wrong), so the grid can draw before hero.json arrives. */
+  initialBits: string;
 }) {
   const [data, setData] = useState<HeroData | null>(null);
   const [model, setModel] = useState<Model>(DEFAULT.model);
@@ -45,6 +48,7 @@ export function Instrument({
   }, []);
 
   const series = data?.[model][strategy];
+  const defaultBits = useMemo(() => Uint8Array.from(initialBits, (c) => (c === "1" ? 1 : 0)), [initialBits]);
   const isDefault = model === DEFAULT.model && strategy === DEFAULT.strategy && cut === DEFAULT.cut;
   const r = useMemo(() => (series ? readout(series, cut) : isDefault ? initial : null), [series, cut, isDefault, initial]);
 
@@ -99,25 +103,33 @@ export function Instrument({
       </div>
 
       <div className="order-3 wide:col-span-9 wide:col-start-1 wide:row-start-2 wide:mt-6">
-        {series ? (
-          <DotGrid
-            series={series}
-            cols={nIntents}
-            handled={r?.handled ?? 0}
-            onPick={(i) => {
-              openTicket(model, strategy, series.ticket[i]);
-              scrollToExplorer();
-            }}
-          />
-        ) : (
-          <div className="w-full" style={{ aspectRatio: `${nIntents} / ${Math.ceil(initial.n / nIntents)}` }} aria-hidden />
-        )}
-        <div className="mt-5">
-          <Ruler value={cut} onChange={setCut} marks={coverageAt[model][strategy]} valueText={valueText} />
+        <DotGrid
+          correct={series ? series.correct : defaultBits}
+          confidence={series?.confidence}
+          cols={nIntents}
+          handled={r?.handled ?? 0}
+          onPick={
+            series
+              ? (i) => {
+                  openTicket(model, strategy, series.ticket[i]);
+                  scrollToExplorer();
+                }
+              : undefined
+          }
+        />
+        {/* The ruler is its own scale, not the grid's x-axis: separate line, own label. */}
+        <div className="mt-8">
+          <p id="cutoff-label" className="text-sm font-medium">
+            Confidence cutoff
+          </p>
+          <div className="mt-2">
+            <Ruler value={cut} onChange={setCut} marks={coverageAt[model][strategy]} valueText={valueText} labelledBy="cutoff-label" />
+          </div>
         </div>
         <Caption n={1}>
           All {int(initial.n)} tickets, highest confidence first, {nIntents} to a row. Filled dots were answered
-          correctly; rings were wrong. Dots below the cutoff fade: those tickets go to a person.
+          correctly; rings were wrong. Dots below the cutoff fade: those tickets go to a person, and the yellow mark at
+          the left edge shows the row where the cutoff falls.
           <Ref n={1} /> Drag the ruler or use the
           arrow keys; the marks under it snap to the measured cutoff for each accuracy target.{" "}
           <span className="[@media(hover:none)]:hidden">Click a dot to read its ticket.</span>

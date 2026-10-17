@@ -28,11 +28,13 @@ export function Ruler({
   onChange,
   marks,
   valueText,
+  labelledBy,
 }: {
   value: number;
   onChange: (v: number) => void;
   marks: CoverageAt[];
   valueText: string;
+  labelledBy: string;
 }) {
   const track = useRef<HTMLDivElement>(null);
   const reachable = marks.filter((m) => m.cutoff !== null);
@@ -72,7 +74,7 @@ export function Ruler({
         id="cutoff"
         role="slider"
         tabIndex={0}
-        aria-label="Confidence cutoff"
+        aria-labelledby={labelledBy}
         aria-valuemin={MIN}
         aria-valuemax={MAX}
         aria-valuenow={value}

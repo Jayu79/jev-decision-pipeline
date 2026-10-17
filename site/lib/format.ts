@@ -5,8 +5,8 @@ export const int = (n: number) => count.format(n);
 /** 0.6448 -> "64.5%" */
 export const pct = (x: number, digits = 1) => `${(x * 100).toFixed(digits)}%`;
 
-/** Cutoffs as decimals with at least two places: 0.97, 0.80, 0.9205. */
-export const cutoff = (x: number) => x.toFixed(4).replace(/0{1,2}$/, "");
+/** Cutoffs and confidences, always with two decimals: 0.97, 0.80. */
+export const cutoff = (x: number) => x.toFixed(2);
 
 const PROPER: Record<string, string> = {
   atm: "ATM", pin: "PIN", apple: "Apple", google: "Google", visa: "Visa", mastercard: "Mastercard",
