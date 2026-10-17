@@ -8,3 +8,5 @@ reports/*.json
 evidence/mock_*.jsonl
 .venv/
 *.egg-info/
+# Results-site data from `python -m jevpipe.export_site_data`; committed later with the site.
+site-data/
