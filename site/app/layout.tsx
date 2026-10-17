@@ -1,25 +1,24 @@
 import type { Metadata, Viewport } from "next";
-import "@fontsource/schibsted-grotesk/400.css";
-import "@fontsource/schibsted-grotesk/500.css";
-import "@fontsource/schibsted-grotesk/600.css";
+import "@fontsource-variable/archivo/wdth.css";
+import "@fontsource-variable/source-serif-4/opsz.css";
+import "@fontsource-variable/source-serif-4/opsz-italic.css";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Can you trust Jev's confidence? Jev decision pipeline results",
+  metadataBase: new URL("https://jayu79.github.io"),
+  title: "Jev, calibrated: a calibration study by Jayanth Veeramachaneni",
   authors: [{ name: "Jayanth Veeramachaneni", url: "https://github.com/Jayu79" }],
 };
 
 export const viewport: Viewport = {
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#EDF0F3" },
-    { media: "(prefers-color-scheme: dark)", color: "#12171F" },
-  ],
+  themeColor: "#F5F6F4",
+  colorScheme: "light",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en">
-      <body className="antialiased">{children}</body>
+      <body>{children}</body>
     </html>
   );
 }

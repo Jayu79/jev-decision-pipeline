@@ -1,58 +1,54 @@
 @import "tailwindcss";
 
+/* Tokens: see DESIGN.md. Light only, by design. */
 :root {
-  --paper: #edf0f3;
-  --surface: #f7f8fa;
-  --ink: #16202e;
-  --steel: #5b6878;
-  --rule: #d3d9e0;
-  --correct: #2a78d6;
-  --wrong: #eb6834;
-  --m113: #2a78d6;
-  --m114: #1baf7a;
+  --paper: #f5f6f4;
+  --raised: #ffffff;
+  --ink: #1d2124;
+  --ink-2: #5a6168;
+  --hairline: #c9cdd0;
+  --grid: #e3e6e4;
+  --signal: #f2b705;
+  --correct: #1d2124;
+  --wrong: #d9480f;
+  --m113: #1d2124;
+  --m114: #0f7b8a;
   color-scheme: light;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --paper: #12171f;
-    --surface: #1a212b;
-    --ink: #e8edf2;
-    --steel: #a3aebb;
-    --rule: #2a3340;
-    --correct: #3987e5;
-    --wrong: #d95926;
-    --m113: #3987e5;
-    --m114: #199e70;
-    color-scheme: dark;
-  }
 }
 
 @theme inline {
   --color-paper: var(--paper);
-  --color-surface: var(--surface);
+  --color-raised: var(--raised);
   --color-ink: var(--ink);
-  --color-steel: var(--steel);
-  --color-rule: var(--rule);
-  --color-correct: var(--correct);
+  --color-ink-2: var(--ink-2);
+  --color-hairline: var(--hairline);
+  --color-grid: var(--grid);
+  --color-signal: var(--signal);
   --color-wrong: var(--wrong);
   --color-m113: var(--m113);
   --color-m114: var(--m114);
-  --font-sans: "Schibsted Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Archivo Variable", "Archivo", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Source Serif 4 Variable", "Source Serif 4", Georgia, serif;
+}
 
-  /* 16px base; the page uses 15/17/20/26/38/56. */
+@theme {
+  --breakpoint-wide: 68.75rem; /* 1100px: margin notes move into the margin */
+
+  /* 13 / 15 / 18 / 22 / 30 / 44 / 72 */
+  --text-xs: 0.8125rem;
+  --text-xs--line-height: 1.45;
   --text-sm: 0.9375rem;
   --text-sm--line-height: 1.5;
-  --text-base: 1.0625rem;
+  --text-base: 1.125rem;
   --text-base--line-height: 1.6;
-  --text-lg: 1.25rem;
-  --text-lg--line-height: 1.5;
-  --text-xl: 1.625rem;
-  --text-xl--line-height: 1.25;
-  --text-2xl: 2.375rem;
-  --text-2xl--line-height: 1.12;
-  --text-3xl: 3.5rem;
-  --text-3xl--line-height: 1.05;
+  --text-lg: 1.375rem;
+  --text-lg--line-height: 1.4;
+  --text-xl: 1.875rem;
+  --text-xl--line-height: 1.15;
+  --text-2xl: 2.75rem;
+  --text-2xl--line-height: 1.05;
+  --text-3xl: 4.5rem;
+  --text-3xl--line-height: 1;
 }
 
 html {
@@ -65,89 +61,110 @@ body {
   background: var(--paper);
   color: var(--ink);
   font-family: var(--font-sans);
-  font-size: var(--text-base);
-  line-height: 1.6;
+  font-size: var(--text-sm);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
 }
 
-h1,
-h2,
-h3 {
+/* Display: Archivo Expanded. */
+.display {
+  font-family: var(--font-sans);
+  font-stretch: 125%;
   font-weight: 600;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.01em;
   text-wrap: balance;
 }
 
-p {
+/* Prose: Source Serif 4 with optical sizes, held to a 62 to 68ch measure. */
+.prose-text {
+  font-family: var(--font-serif);
+  font-optical-sizing: auto;
+  font-size: var(--text-base);
+  line-height: 1.6;
+  max-width: 66ch;
   text-wrap: pretty;
 }
 
+.note {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 0.90625rem; /* 14.5px */
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+
+.num {
+  font-variant-numeric: tabular-nums;
+}
+
+.caption {
+  font-family: var(--font-sans);
+  font-size: var(--text-xs);
+  line-height: 1.45;
+  color: var(--ink-2);
+}
+
 a {
+  color: inherit;
   text-decoration: underline;
   text-decoration-thickness: 1px;
   text-underline-offset: 3px;
-  text-decoration-color: var(--steel);
+  text-decoration-color: var(--hairline);
 }
-
 a:hover {
   text-decoration-color: var(--ink);
 }
 
 :focus-visible {
   outline: 2px solid var(--ink);
-  outline-offset: 3px;
-  border-radius: 4px;
+  outline-offset: 2px;
+  border-radius: 0;
+}
+
+::selection {
+  background: var(--grid);
+}
+
+details > summary {
+  cursor: pointer;
+  width: fit-content;
+  color: var(--ink-2);
+  list-style-position: inside;
+}
+details > summary:hover {
+  color: var(--ink);
 }
 
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
   *::after {
+    animation: none !important;
     transition: none !important;
     scroll-behavior: auto !important;
   }
 }
 
-/* The cutoff slider: a large, plain track with a visible thumb. */
-.cutoff {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 100%;
-  height: 44px;
-  background: transparent;
-  cursor: pointer;
-}
-.cutoff::-webkit-slider-runnable-track {
-  height: 8px;
-  border-radius: 4px;
-  background: linear-gradient(to right, var(--steel) var(--fill), var(--ink) var(--fill));
-}
-.cutoff::-moz-range-track {
-  height: 8px;
-  border-radius: 4px;
-  background: linear-gradient(to right, var(--steel) var(--fill), var(--ink) var(--fill));
-}
-.cutoff::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  width: 28px;
-  height: 28px;
-  margin-top: -10px;
-  border-radius: 50%;
-  background: var(--surface);
-  border: 3px solid var(--ink);
-}
-.cutoff::-moz-range-thumb {
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  background: var(--surface);
-  border: 3px solid var(--ink);
-}
-
-details > summary {
-  cursor: pointer;
-  color: var(--steel);
-  width: fit-content;
-}
-details > summary:hover {
-  color: var(--ink);
+@media print {
+  @page {
+    margin: 16mm;
+  }
+  html,
+  body {
+    background: #fff;
+  }
+  .no-print {
+    display: none !important;
+  }
+  figure,
+  table,
+  .keep {
+    break-inside: avoid;
+  }
+  section {
+    break-before: auto;
+  }
+  a {
+    text-decoration: none;
+  }
 }

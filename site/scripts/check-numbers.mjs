@@ -26,26 +26,8 @@ const check = (ok, msg) => {
   if (!ok) failures.push(msg);
 };
 
-// Built page text as a reader sees it: numbers are drawn twice (a tabular copy
-// hidden from screen readers, and a plain copy for them), so keep the plain one.
-const dropHidden = (s) => {
-  let out = "";
-  let i = 0;
-  const open = '<span aria-hidden="true" class="select-none">';
-  for (let at = s.indexOf(open); at >= 0; at = s.indexOf(open, i)) {
-    out += s.slice(i, at);
-    let depth = 0;
-    let j = at;
-    do {
-      const o = s.indexOf("<span", j + 1);
-      const c = s.indexOf("</span>", j + 1);
-      if (o >= 0 && o < c) { depth++; j = o; } else { depth--; j = c; }
-    } while (depth >= 0);
-    i = j + "</span>".length;
-  }
-  return out + s.slice(i);
-};
-const html = dropHidden(readFileSync(join(site, "out", "index.html"), "utf8"))
+// Built page text, with React's text-boundary comments and tags removed.
+const html = readFileSync(join(site, "out", "index.html"), "utf8")
   .replace(/<!-- -->/g, "")
   .replace(/<\/?span[^>]*>/g, "")
   .replace(/<[^>]+>/g, " ")
@@ -89,7 +71,8 @@ for (const e of EXPECTED) {
 // The hero's default state: jev-1.13.0, flat, cutoff 0.97.
 const def = hero["jev-1.13.0"].flat;
 const handled = def.confidence.filter((c) => c >= 0.97).length;
-check(/Handled by Jev 64\.5% /.test(html), `default hero shows "Handled by Jev 64.5%" (${handled} tickets)`);
+check(/handled by Jev 64\.5% /.test(html), `default view shows 64.5% handled by Jev (${handled} tickets)`);
+check(html.includes("Measured: 64.5% at 95% accuracy"), 'masthead tag reads "Measured: 64.5% at 95% accuracy"');
 check(html.includes(`${handled.toLocaleString("en-US")} tickets`), `default hero shows ${handled.toLocaleString("en-US")} tickets`);
 
 if (failures.length) {

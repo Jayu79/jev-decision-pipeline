@@ -1,14 +1,14 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { N } from "./N";
-import { ModelLabel, Segmented } from "./Segmented";
+import { Caption } from "./Layout";
 import { useSiteState } from "./SiteState";
+import { TextToggle } from "./TextToggle";
 import { cutoff as fmtCutoff, humanize, int, pct } from "@/lib/format";
 import { MODELS, STRATEGIES, STRATEGY_LABEL, type Area, type DecisionRow, type Model, type Strategy, type TicketRow } from "@/lib/types";
 
 const BASE = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
-const PAGE = 20;
+const PAGE = 12;
 
 type Status = "all" | "wrong" | "confident_wrong" | "unsure";
 const STATUS: { value: Status; label: string }[] = [
@@ -45,9 +45,10 @@ function loadDecisions(m: Model, s: Strategy, tickets: TicketRow[]) {
   return cache.get(key) as Promise<DecisionRow[]>;
 }
 
+/** Fig. 4: every ticket, filterable, with one shown as a specimen. */
 export function Explorer({ areas }: { areas: Area[] }) {
   const root = useRef<HTMLDivElement>(null);
-  const detailRef = useRef<HTMLDivElement>(null);
+  const specimenRef = useRef<HTMLDivElement>(null);
   const [wanted, setWanted] = useState(false);
   const [tickets, setTickets] = useState<TicketRow[] | null>(null);
   const [decisions, setDecisions] = useState<{ key: string; rows: DecisionRow[] } | null>(null);
@@ -60,7 +61,7 @@ export function Explorer({ areas }: { areas: Area[] }) {
   const [selected, setSelected] = useState<number | null>(null);
   const { request } = useSiteState();
 
-  // Start loading when the section is close to the viewport, or when asked for a ticket.
+  // Start loading when the figure is close to the viewport, or when asked for a ticket.
   useEffect(() => {
     const el = root.current;
     if (!el) return;
@@ -122,11 +123,12 @@ export function Explorer({ areas }: { areas: Area[] }) {
       jumped.current = request.nonce;
     }
   }, [matches, request, rows]);
+
   const pages = Math.max(1, Math.ceil(matches.length / PAGE));
   const current = Math.min(page, pages - 1);
   const shown = matches.slice(current * PAGE, current * PAGE + PAGE);
-
   const active = selected ?? matches[0] ?? null;
+  const ready = !!(tickets && rows);
 
   const reset = (fn: () => void) => {
     fn();
@@ -139,105 +141,104 @@ export function Explorer({ areas }: { areas: Area[] }) {
       : { text: "No tickets match. Show all tickets.", fix: () => reset(() => setStatus("all")), button: "Show all tickets" };
 
   return (
-    <div ref={root}>
-      <div className="flex flex-col gap-4">
-        <div className="flex flex-col gap-3 lg:flex-row lg:flex-wrap lg:gap-x-10">
-          <Segmented
-            label="Model"
-            value={model}
-            onChange={(m) => reset(() => setModel(m))}
-            options={MODELS.map((m) => ({ value: m, label: <ModelLabel model={m} /> }))}
-          />
-          <Segmented
-            label="Questions"
-            value={strategy}
-            onChange={(s) => reset(() => setStrategy(s))}
-            options={STRATEGIES.map((s) => ({ value: s, label: STRATEGY_LABEL[s] }))}
-          />
-        </div>
-        <Segmented label="Show" value={status} onChange={(s) => reset(() => setStatus(s))} options={STATUS} />
-        <div className="flex flex-col gap-3 sm:flex-row">
-          <label className="flex flex-col gap-1 text-sm text-steel sm:w-72">
-            Area
-            <select
-              value={area}
-              onChange={(e) => reset(() => setArea(e.target.value))}
-              className="min-h-11 rounded-lg border border-rule bg-surface px-3 text-base text-ink"
-            >
-              <option value="all">{`All ${areas.length} areas`}</option>
-              {areas.map((a) => (
-                <option key={a.area} value={a.area}>
-                  {humanize(a.area)}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="flex flex-1 flex-col gap-1 text-sm text-steel">
-            Search messages
-            <input
-              type="search"
-              value={query}
-              onChange={(e) => reset(() => setQuery(e.target.value))}
-              placeholder="For example: card, refund, exchange rate"
-              className="min-h-11 rounded-lg border border-rule bg-surface px-3 text-base text-ink placeholder:text-steel"
+    <figure ref={root} className="mt-10">
+      <div className="grid grid-cols-1 gap-x-6 gap-y-10 lg:grid-cols-12 lg:gap-y-0">
+        {/* Left pane, top: filters. */}
+        <div className="lg:col-span-6 lg:col-start-1 lg:row-start-1">
+          <div className="no-print flex flex-col gap-1">
+            <TextToggle label="Model" value={model} onChange={(m) => reset(() => setModel(m))} options={MODELS.map((m) => ({ value: m, label: m }))} />
+            <TextToggle
+              label="Questions"
+              value={strategy}
+              onChange={(s) => reset(() => setStrategy(s))}
+              options={STRATEGIES.map((s) => ({ value: s, label: STRATEGY_LABEL[s] }))}
             />
-          </label>
-        </div>
-        {STATUS_HINT[status] && <p className="text-sm text-steel">{STATUS_HINT[status]}</p>}
-      </div>
-
-      <div className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-        <div ref={detailRef} className="scroll-mt-6 lg:sticky lg:top-6 lg:order-2 lg:self-start">
-          {tickets && rows && active !== null ? (
-            <Detail ticket={tickets[active]} d={rows[active]} areas={areas} model={model} />
-          ) : (
-            <div className="rounded-xl border border-rule bg-surface p-6 text-steel">
-              {tickets && rows ? "Pick a message to see what Jev said." : "Loading tickets…"}
+            <TextToggle label="Show" value={status} onChange={(s) => reset(() => setStatus(s))} options={STATUS} />
+            <div className="mt-4 grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-[minmax(0,14rem)_minmax(0,1fr)]">
+              <label className="flex flex-col text-xs text-ink-2">
+                Area
+                <select
+                  value={area}
+                  onChange={(e) => reset(() => setArea(e.target.value))}
+                  className="mt-1 h-9 appearance-none rounded-none border-0 border-b border-ink bg-transparent bg-[length:10px_6px] bg-[right_2px_center] bg-no-repeat pr-6 text-sm text-ink"
+                  style={{
+                    backgroundImage:
+                      "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6' fill='none' stroke='%231d2124'/%3E%3C/svg%3E\")",
+                  }}
+                >
+                  <option value="all">{`All ${areas.length} areas`}</option>
+                  {areas.map((a) => (
+                    <option key={a.area} value={a.area}>
+                      {humanize(a.area)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="flex flex-col text-xs text-ink-2">
+                Search messages
+                <input
+                  type="search"
+                  value={query}
+                  onChange={(e) => reset(() => setQuery(e.target.value))}
+                  placeholder="card, refund, exchange rate"
+                  className="mt-1 h-9 rounded-none border-0 border-b border-ink bg-transparent text-sm text-ink placeholder:text-ink-2"
+                />
+              </label>
             </div>
-          )}
+            {STATUS_HINT[status] && <p className="mt-3 text-xs text-ink-2">{STATUS_HINT[status]}</p>}
+          </div>
+
         </div>
 
-        <div className="lg:order-1">
-          {tickets && rows && (
-            <p className="mb-3 text-sm text-steel" aria-live="polite">
-              <N>
-                {matches.length
-                  ? `${int(matches.length)} tickets. Showing ${int(current * PAGE + 1)} to ${int(current * PAGE + shown.length)}.`
-                  : ""}
-              </N>
-            </p>
+        {/* Right pane: the specimen. */}
+        <div ref={specimenRef} className="scroll-mt-8 lg:sticky lg:top-8 lg:col-span-6 lg:col-start-7 lg:row-span-2 lg:row-start-1 lg:self-start">
+          {ready && active !== null ? (
+            <Specimen ticket={tickets![active]} d={rows![active]} areas={areas} />
+          ) : (
+            <p className="border-t border-ink pt-3 text-xs text-ink-2">{ready ? "Pick a message to inspect it." : "Loading tickets…"}</p>
           )}
-          {tickets && rows && matches.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-rule p-6">
-              <p>{empty.text}</p>
-              <button type="button" onClick={empty.fix} className="mt-3 min-h-10 rounded-full border border-ink px-4 text-sm font-medium">
+        </div>
+        {/* Left pane, below: the list. */}
+        <div className="lg:col-span-6 lg:col-start-1 lg:row-start-2">
+          <p className="num mt-8 border-b border-ink pb-2 text-xs text-ink-2" aria-live="polite">
+            {ready
+              ? matches.length
+                ? `${int(matches.length)} tickets. Showing ${int(current * PAGE + 1)} to ${int(current * PAGE + shown.length)}.`
+                : "0 tickets."
+              : "Loading tickets…"}
+          </p>
+          {ready && matches.length === 0 ? (
+            <div className="py-6">
+              <p className="prose-text">{empty.text}</p>
+              <button type="button" onClick={empty.fix} className="mt-2 text-sm underline decoration-hairline underline-offset-4 hover:decoration-ink">
                 {empty.button}
               </button>
             </div>
           ) : (
-            <ul className="divide-y divide-rule border-y border-rule">
-              {tickets &&
-                rows &&
+            <ul>
+              {ready &&
                 shown.map((i) => {
-                  const t = tickets[i];
-                  const d = rows[i];
+                  const t = tickets![i];
+                  const d = rows![i];
                   const on = i === active;
                   return (
-                    <li key={t[0]}>
+                    <li key={t[0]} className="border-b border-hairline">
                       <button
                         type="button"
                         aria-current={on || undefined}
                         onClick={() => {
                           setSelected(i);
-                          if (window.matchMedia("(max-width: 1023px)").matches) detailRef.current?.scrollIntoView({ block: "start" });
+                          if (window.matchMedia("(max-width: 1023px)").matches) specimenRef.current?.scrollIntoView({ block: "start" });
                         }}
-                        className={`block w-full px-3 py-3 text-left ${on ? "bg-surface shadow-[inset_3px_0_0_var(--ink)]" : "hover:bg-surface"}`}
+                        className={`group block w-full border-l-2 py-3 pr-2 pl-4 text-left ${on ? "border-ink" : "border-transparent"}`}
                       >
-                        <span className="line-clamp-2">{t[1]}</span>
-                        <span className="mt-1 flex flex-wrap items-center gap-x-3 text-sm text-steel">
+                        <span className={`line-clamp-2 font-serif text-base leading-snug ${on ? "" : "group-hover:underline group-hover:decoration-hairline"}`}>
+                          {t[1]}
+                        </span>
+                        <span className="mt-1 flex flex-wrap items-center gap-x-4 text-xs text-ink-2">
                           <Verdict right={!!d[4]} />
                           <span>Jev: {humanize(d[1])}</span>
-                          <span><N>confidence {fmtCutoff(d[3])}</N></span>
+                          <span className="num">confidence {fmtCutoff(d[3])}</span>
                         </span>
                       </button>
                     </li>
@@ -246,101 +247,113 @@ export function Explorer({ areas }: { areas: Area[] }) {
             </ul>
           )}
           {pages > 1 && (
-            <nav aria-label="Ticket pages" className="mt-4 flex flex-wrap items-center gap-3">
+            <nav aria-label="Ticket pages" className="no-print mt-4 flex flex-wrap items-baseline gap-x-6 gap-y-2 text-sm">
               <button
                 type="button"
                 disabled={current === 0}
                 onClick={() => setPage(current - 1)}
-                className="min-h-10 rounded-full border border-rule bg-surface px-4 text-sm font-medium disabled:opacity-40"
+                className="underline decoration-hairline underline-offset-4 hover:decoration-ink disabled:text-ink-2 disabled:no-underline"
               >
                 Previous page
               </button>
-              <span className="text-sm text-steel">
-                <N>Page {current + 1} of {pages}</N>
+              <span className="num text-xs text-ink-2">
+                Page {current + 1} of {pages}
               </span>
               <button
                 type="button"
                 disabled={current >= pages - 1}
                 onClick={() => setPage(current + 1)}
-                className="min-h-10 rounded-full border border-rule bg-surface px-4 text-sm font-medium disabled:opacity-40"
+                className="underline decoration-hairline underline-offset-4 hover:decoration-ink disabled:text-ink-2 disabled:no-underline"
               >
                 Next page
               </button>
             </nav>
           )}
         </div>
+
       </div>
-    </div>
+      <Caption n={4}>
+        Every ticket Jev saw. Pick one from the list to inspect it: the customer&apos;s message, the correct intent,
+        Jev&apos;s five most likely intents with their probabilities, and the request ID TypeSafe returned for that call.
+      </Caption>
+    </figure>
   );
 }
 
 function Verdict({ right }: { right: boolean }) {
   return (
-    <span className="inline-flex items-center gap-1.5 font-medium text-ink">
-      <span
-        aria-hidden
-        className={`inline-block size-2.5 rounded-full ${right ? "bg-correct" : "border-2 border-wrong"}`}
-      />
+    <span className="inline-flex items-center gap-1.5 text-ink">
+      <svg width="9" height="9" aria-hidden>
+        {right ? (
+          <circle cx="4.5" cy="4.5" r="3.5" fill="var(--ink)" />
+        ) : (
+          <circle cx="4.5" cy="4.5" r="3.4" fill="none" stroke="var(--wrong)" strokeWidth="1.6" />
+        )}
+      </svg>
       {right ? "Right" : "Wrong"}
     </span>
   );
 }
 
-function Detail({ ticket, d, areas, model }: { ticket: TicketRow; d: DecisionRow; areas: Area[]; model: Model }) {
-  const [, text, label, area] = ticket;
+function Specimen({ ticket, d, areas }: { ticket: TicketRow; d: DecisionRow; areas: Area[] }) {
+  const [eventId, text, label, area] = ticket;
   const [, intent, pIntent, conf, correct, requestId, top5] = d;
   const areaName = areas.find((a) => a.area === area);
   const inTop = top5.some(([i]) => i === label);
   return (
-    <article aria-label="Selected ticket" className="rounded-xl border border-rule bg-surface p-5 sm:p-6">
-      <p className="text-sm text-steel">Customer message</p>
-      <blockquote className="mt-1 text-lg">&ldquo;{text}&rdquo;</blockquote>
+    <article aria-label="Selected ticket" className="border-t border-ink pt-3">
+      <p className="num text-xs text-ink-2">Ticket {eventId}</p>
+      <blockquote className="mt-4 font-serif text-lg leading-snug [hanging-punctuation:first]">&ldquo;{text}&rdquo;</blockquote>
 
-      <dl className="mt-5 grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
-        <dt className="text-steel">Correct intent</dt>
-        <dd className="font-medium">
-          {humanize(label)} <span className="font-normal text-steel">in {areaName ? humanize(areaName.area) : area}</span>
+      <dl className="mt-6 grid grid-cols-[8.5rem_1fr] gap-x-4 gap-y-2 border-t border-hairline pt-4 text-sm">
+        <dt className="text-ink-2">Correct intent</dt>
+        <dd>
+          {humanize(label)} <span className="text-ink-2">in {areaName ? humanize(areaName.area) : area}</span>
         </dd>
-        <dt className="text-steel">Jev chose</dt>
+        <dt className="text-ink-2">Jev chose</dt>
         <dd className="flex flex-wrap items-center gap-x-3">
-          <span className="font-medium">{humanize(intent)}</span>
+          {humanize(intent)}
           <Verdict right={!!correct} />
         </dd>
-        <dt className="text-steel">Confidence</dt>
-        <dd>
-          <N>{fmtCutoff(conf)}</N> <span className="text-steel"><N>(probability {pct(pIntent)})</N></span>
+        <dt className="text-ink-2">Confidence</dt>
+        <dd className="num">
+          {fmtCutoff(conf)} <span className="text-ink-2">(probability {pct(pIntent)})</span>
         </dd>
       </dl>
 
-      <h3 className="mt-6 text-base">Jev&apos;s top 5 intents</h3>
-      <ul className="mt-3 flex flex-col gap-2.5">
+      <h3 className="mt-8 text-sm font-semibold">Jev&apos;s top 5 intents</h3>
+      <ul className="mt-3">
         {top5.map(([i, p]) => {
           const isLabel = i === label;
+          const isPick = i === intent;
           return (
-            <li key={i} className="text-sm">
-              <div className="flex justify-between gap-3">
+            <li key={i} className="py-2">
+              <div className="flex items-baseline justify-between gap-3 text-sm">
                 <span className={isLabel ? "font-semibold" : ""}>
                   {humanize(i)}
-                  {isLabel && <span className="font-normal text-steel"> (correct intent)</span>}
-                  {i === intent && !isLabel && <span className="text-steel"> (Jev&apos;s pick)</span>}
+                  {isLabel && <span className="font-normal text-ink-2"> (correct intent)</span>}
+                  {isPick && !isLabel && <span className="text-ink-2"> (Jev&apos;s pick)</span>}
                 </span>
-                <span><N>{pct(p)}</N></span>
               </div>
-              <div className="mt-1 h-2 rounded-full bg-rule">
-                <div
-                  className="h-2 rounded-full"
-                  style={{ width: `${Math.max(p * 100, 0.5)}%`, background: isLabel ? "var(--correct)" : "var(--steel)" }}
-                />
+              {/* A fine measurement bar on a ruled track, value at its end. */}
+              <div className="mt-1.5 flex items-center gap-3">
+                <svg className="h-3 flex-1 overflow-visible" aria-hidden>
+                  <line x1="0" x2="100%" y1="6" y2="6" stroke="var(--hairline)" />
+                  {[0, 25, 50, 75, 100].map((t) => (
+                    <line key={t} x1={`${t}%`} x2={`${t}%`} y1="3" y2="9" stroke="var(--hairline)" />
+                  ))}
+                  <rect x="0" y="4.5" width={`${Math.max(p * 100, 0.4)}%`} height="3" fill={isLabel ? "var(--ink)" : "var(--ink-2)"} />
+                </svg>
+                <span className="num w-14 text-right text-xs">{pct(p)}</span>
               </div>
             </li>
           );
         })}
       </ul>
-      {!inTop && <p className="mt-3 text-sm text-steel">The correct intent is not in Jev&apos;s top 5.</p>}
+      {!inTop && <p className="mt-2 text-xs text-ink-2">The correct intent is not in Jev&apos;s top 5.</p>}
 
-      <p className="mt-6 text-sm break-all text-steel">
-        TypeSafe request ID <code className="text-ink">{requestId}</code>
-        <span className="sr-only">, served by {model}</span>
+      <p className="mt-6 border-t border-hairline pt-3 text-xs break-all text-ink-2">
+        TypeSafe request ID <span className="num text-ink">{requestId}</span>
       </p>
     </article>
   );

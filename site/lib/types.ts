@@ -4,8 +4,8 @@ export type Model = (typeof MODELS)[number];
 export type Strategy = (typeof STRATEGIES)[number];
 
 export const STRATEGY_LABEL: Record<Strategy, string> = {
-  flat: "Flat 77-way",
-  fanout: "Fan-out: area, then intent",
+  flat: "Flat question",
+  fanout: "Fan-out",
 };
 
 export type ReliabilityBin = { bin: number; lo: number; hi: number; n: number; mean_p: number; accuracy: number };
